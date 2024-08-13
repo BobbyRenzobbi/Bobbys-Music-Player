@@ -5,59 +5,58 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Networking;
-using System;
 using HarmonyLib;
 using Comfort.Common;
 using System.Linq;
 using SoundtrackMod;
+using System.Threading.Tasks;
 
 namespace BobbyRenzobbi.CustomMenuMusic
 {
     public class CustomMusicPatch : ModulePatch
     {
-        private static int rndNumber = 0;
-        private static string track = "";
-        private static string trackPath = "";
         private static List<AudioClip> audioClips = new List<AudioClip>();
         private static System.Random rand = new System.Random();
         internal static List<string> menuTrackList = new List<string>();
-        private static List<string> unPlayedTrackList = new List<string>();
-        private static string lastTrack = "";
+        private static List<AudioClip> trackArray = new List<AudioClip>();
+        private static List<AudioClip> storedTrackArray = new List<AudioClip>();
+        private static List<string> trackListToPlay = new List<string>();
+        private static float targetLength = 3600f;
+        private static float totalLength = 0f;
+        private static List<string> trackNamesArray = new List<string>();
+        private static List<string> storedTrackNamesArray = new List<string>();
+        internal static bool HasReloadedAudio = false;
 
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.method_3));
         }
 
-        private void LoadNextTrack()
+        internal async void LoadAudioClips()
         {
-            if (menuTrackList == null || menuTrackList.Count == 0)
-            {
-                Logger.LogInfo("No music found in the 'sounds' folder");
-                return;
-            }
-            if (unPlayedTrackList.IsNullOrEmpty())
-            {
-                unPlayedTrackList.AddRange(menuTrackList);
-            }
-            audioClips.Clear();
-
+            HasReloadedAudio = true;
+            trackArray.Clear();
+            trackListToPlay.Clear();
+            trackListToPlay.AddRange(menuTrackList);
             do
             {
-                rndNumber = rand.Next(unPlayedTrackList.Count);
-                track = unPlayedTrackList[rndNumber];
-            }
-            while ((track == lastTrack) && menuTrackList.Count > 1);
-
-            unPlayedTrackList.Remove(track);
-            lastTrack = track;
-            var clip = RequestAudioClip(track);
-            trackPath = Path.GetFileName(track);
-            audioClips.Add(clip);
-            Plugin.LogSource.LogInfo(trackPath + " added to audioClips");
+                int nextRandom = rand.Next(trackListToPlay.Count);
+                string track = trackListToPlay[nextRandom];
+                string trackPath = Path.GetFileName(track);
+                AudioClip unityAudioClip = await RequestAudioClip(track);
+                trackArray.Add(unityAudioClip);
+                trackNamesArray.Add(trackPath);
+                trackListToPlay.Remove(track);
+                totalLength += trackArray.Last().length;
+                Plugin.LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
+            } while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()));
+            storedTrackArray.AddRange(trackArray);
+            storedTrackNamesArray.AddRange(trackNamesArray);
+            Plugin.LogSource.LogInfo("trackArray stored in storeTrackArray");
+            totalLength = 0;
         }
 
-        private AudioClip RequestAudioClip(string path)
+        private async Task<AudioClip> RequestAudioClip(string path)
         {
             string extension = Path.GetExtension(path);
             Dictionary<string, AudioType> audioType = new Dictionary<string, AudioType>
@@ -70,32 +69,43 @@ namespace BobbyRenzobbi.CustomMenuMusic
             UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
 
             while (!sendWeb.isDone)
-
+                await Task.Yield();
             if (uwr.isNetworkError || uwr.isHttpError)
             {
-                Logger.LogError("CustomMenuMusic Mod: Failed To Fetch Audio Clip");
+                Logger.LogError("Soundtrack Mod: Failed To Fetch Audio Clip");
                 return null;
             }
-            AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
-            return audioclip;
+            else
+            {
+                AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
+                return audioclip;
+            }
         }
 
         [PatchPrefix]
         static bool Prefix()
         {
-            CustomMusicPatch patch = new CustomMusicPatch();
-            patch.LoadNextTrack();
-            //Credit to SamSWAT for discovering that the game loads infinitely if the audioClip_0 array has only one element
-            if (audioClips.Count == 0)
+            if (menuTrackList.IsNullOrEmpty())
             {
                 return true;
             }
-            if (audioClips.Count == 1)
+            CustomMusicPatch patch = new CustomMusicPatch();
+            audioClips.Clear();
+            audioClips.Add(trackArray[0]);
+            audioClips.Add(trackArray[0]);
+            trackArray.RemoveAt(0);
+            //Credit to SamSWAT for discovering that the game loads infinitely if the audioClip_0 array has only one element
+            if (trackArray.IsNullOrEmpty())
             {
-                audioClips.Add(audioClips[0]);
+                trackArray.AddRange(storedTrackArray);
             }
             Traverse.Create(Singleton<GUISounds>.Instance).Field("audioClip_0").SetValue(audioClips.ToArray());
-            Plugin.LogSource.LogInfo("Playing " + trackPath);
+            Plugin.LogSource.LogInfo("Playing " + trackNamesArray[0]);
+            trackNamesArray.RemoveAt(0);
+            if (trackNamesArray.IsNullOrEmpty())
+            {
+                trackNamesArray.AddRange(storedTrackNamesArray);
+            }
             return true;
         }
     }
