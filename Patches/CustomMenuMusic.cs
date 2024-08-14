@@ -36,6 +36,9 @@ namespace BobbyRenzobbi.CustomMenuMusic
         {
             HasReloadedAudio = true;
             trackArray.Clear();
+            storedTrackArray.Clear();
+            trackNamesArray.Clear();
+            storedTrackNamesArray.Clear();
             trackListToPlay.Clear();
             trackListToPlay.AddRange(menuTrackList);
             do
@@ -89,7 +92,6 @@ namespace BobbyRenzobbi.CustomMenuMusic
             {
                 return true;
             }
-            CustomMusicPatch patch = new CustomMusicPatch();
             audioClips.Clear();
             audioClips.Add(trackArray[0]);
             audioClips.Add(trackArray[0]);
