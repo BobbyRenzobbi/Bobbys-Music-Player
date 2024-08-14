@@ -59,7 +59,7 @@ namespace SoundtrackMod
                 return audioclip;
             }
         }
-
+        private static CustomMusicPatch patch = new CustomMusicPatch();
         private static List<AudioClip> trackArray = new List<AudioClip>();
         private static List<AudioClip> storedTrackArray = new List<AudioClip>();
         internal static ManualLogSource LogSource;
@@ -74,10 +74,11 @@ namespace SoundtrackMod
 
         private async void LoadAudioClips()
         {
-            HasStartedLoadingAudio = true;
             HasFinishedLoadingAudio = false;
             storedTrackArray.Clear();
             trackArray.Clear();
+            storedTrackNamesArray.Clear();
+            trackNamesArray.Clear();
             trackListToPlay.Clear();
             trackListToPlay.AddRange(trackList);
             do
@@ -103,7 +104,6 @@ namespace SoundtrackMod
         {
             CustomMusicPatch.menuTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\CustomMenuMusic\\sounds"));
             trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
-            CustomMusicPatch patch = new CustomMusicPatch();
             string settings = "Soundtrack Settings";
             MusicVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music heard in raid", new AcceptableValueRange<float>(0f, 1f)));
             LogSource = Logger;
@@ -125,13 +125,8 @@ namespace SoundtrackMod
                     LogSource.LogError(exception);
                 }
             }
-            if (trackList.IsNullOrEmpty())
-            {
-                return;
-            }
             if (Singleton<GameWorld>.Instance == null && !CustomMusicPatch.HasReloadedAudio)
             {
-                CustomMusicPatch patch = new CustomMusicPatch();
                 patch.LoadAudioClips();
             }
             if (Singleton<GameWorld>.Instance == null || (Singleton<GameWorld>.Instance?.MainPlayer is HideoutPlayer))
@@ -140,6 +135,10 @@ namespace SoundtrackMod
                 return;
             }
             CustomMusicPatch.HasReloadedAudio = false;
+            if (trackList.IsNullOrEmpty())
+            {
+                return;
+            }
             if (Audio.myaudioSource == null)
             {
                 try
@@ -157,6 +156,7 @@ namespace SoundtrackMod
             }
             if (!HasStartedLoadingAudio)
             {
+                HasStartedLoadingAudio = true;
                 LoadAudioClips();
             }
             if (!Audio.myaudioSource.isPlaying && !trackArray.IsNullOrEmpty() && HasFinishedLoadingAudio)
