@@ -159,7 +159,7 @@ namespace SoundtrackMod
                 HasStartedLoadingAudio = true;
                 LoadAudioClips();
             }
-            if (!Audio.myaudioSource.isPlaying && !trackArray.IsNullOrEmpty() && HasFinishedLoadingAudio)
+            if (!Audio.myaudioSource.isPlaying && !trackArray.IsNullOrEmpty() && HasFinishedLoadingAudio && Singleton<AbstractGame>.Instance.Status == GameStatus.Started)
             {
                 LogSource.LogInfo("trackArray has " + trackArray.Count + " elements");
                 Audio.myaudioSource.clip = trackArray[0];
