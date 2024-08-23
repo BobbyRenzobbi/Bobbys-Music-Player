@@ -13,6 +13,7 @@ using Comfort.Common;
 using BobbyRenzobbi.CustomMenuMusic;
 using HarmonyLib;
 using System.Text.RegularExpressions;
+using BobbyRenzobbi.RaidEndMusic;
 
 namespace SoundtrackMod
 {
@@ -50,7 +51,7 @@ namespace SoundtrackMod
                 await Task.Yield();
             if (uwr.isNetworkError || uwr.isHttpError)
             {
-                Logger.LogError("Soundtrack Mod: Failed To Fetch Audio Clip");
+                Logger.LogError("Soundtrack: Failed To Fetch Audio Clip");
                 return null;
             }
             else
@@ -102,13 +103,16 @@ namespace SoundtrackMod
 
         private void Awake()
         {
-            CustomMusicPatch.menuTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\CustomMenuMusic\\sounds"));
-            trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
+            CustomMusicPatch.menuTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\CustomMenuMusic\\sounds"));
+            trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\sounds"));
+            RaidEndMusicPatch.deathMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic"));
+            RaidEndMusicPatch.extractMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic"));
             string settings = "Soundtrack Settings";
             MusicVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music heard in raid", new AcceptableValueRange<float>(0f, 1f)));
             LogSource = Logger;
             LogSource.LogInfo("plugin loaded!");
             new CustomMusicPatch().Enable();
+            new RaidEndMusicPatch().Enable();
             patch.LoadAudioClips();
         }
 

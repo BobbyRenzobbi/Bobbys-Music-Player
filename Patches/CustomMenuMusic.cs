@@ -75,7 +75,7 @@ namespace BobbyRenzobbi.CustomMenuMusic
                 await Task.Yield();
             if (uwr.isNetworkError || uwr.isHttpError)
             {
-                Logger.LogError("Soundtrack Mod: Failed To Fetch Audio Clip");
+                Logger.LogError("CustomMenuMusic: Failed To Fetch Audio Clip");
                 return null;
             }
             else

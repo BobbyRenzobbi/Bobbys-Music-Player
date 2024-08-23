@@ -75,11 +75,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Patches\CustomMenuMusic.cs" />
+    <Compile Include="Patches\RaidEndMusicPatch.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\..\..\BepInEx\plugins\$(TargetFileName)"</PostBuildEvent>
+    <PostBuildEvent>copy "$(TargetPath)" "$(ProjectDir)\..\..\BepInEx\plugins\BobbysMusicPlayer\$(TargetFileName)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
