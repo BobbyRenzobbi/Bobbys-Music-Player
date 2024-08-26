@@ -27,13 +27,18 @@ namespace BobbyRenzobbi.RaidEndMusic
         private void LoadNextTrack(EEndGameSoundType soundType)
         {
             string raidEndTrack;
-            if (soundType == EEndGameSoundType.ArenaLose)
+            if (soundType == EEndGameSoundType.ArenaLose && !deathMusicList.IsNullOrEmpty())
             {
                 raidEndTrack = deathMusicList[0];
             }
-            else
+            else if (soundType == EEndGameSoundType.ArenaWin && !extractMusicList.IsNullOrEmpty())
             {
                 raidEndTrack = extractMusicList[0];
+                
+            }
+            else
+            {
+                return;
             }
             raidEndClip = RequestAudioClip(raidEndTrack);
             string trackPath = Path.GetFileName(raidEndTrack);
