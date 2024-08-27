@@ -4,20 +4,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Networking;
-using System;
 using HarmonyLib;
-using Comfort.Common;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace BobbyRenzobbi.RaidEndMusic
+namespace BobbysMusicPlayer
 {
     public class RaidEndMusicPatch : ModulePatch
     {
         internal static List<string> deathMusicList = new List<string>();
         internal static List<string> extractMusicList = new List<string>();
         private static AudioClip raidEndClip;
+        Plugin plugin = new Plugin();
 
         protected override MethodBase GetTargetMethod()
         {
@@ -40,32 +36,9 @@ namespace BobbyRenzobbi.RaidEndMusic
             {
                 return;
             }
-            raidEndClip = RequestAudioClip(raidEndTrack);
+            raidEndClip = plugin.RequestAudioClip(raidEndTrack);
             string trackPath = Path.GetFileName(raidEndTrack);
             Logger.LogInfo(trackPath + " assigned to Death Music");
-        }
-
-        private AudioClip RequestAudioClip(string path)
-        {
-            string extension = Path.GetExtension(path);
-            Dictionary<string, AudioType> audioType = new Dictionary<string, AudioType>
-            {
-                [".wav"] = AudioType.WAV,
-                [".ogg"] = AudioType.OGGVORBIS,
-                [".mp3"] = AudioType.MPEG
-            };
-            UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, audioType[extension]);
-            UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
-
-            while (!sendWeb.isDone)
-
-            if (uwr.isNetworkError || uwr.isHttpError)
-            {
-                Logger.LogError("ChangeDeathMusic: Failed To Fetch Audio Clip");
-                return null;
-            }
-            AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
-            return audioclip;
         }
 
         [PatchPrefix]

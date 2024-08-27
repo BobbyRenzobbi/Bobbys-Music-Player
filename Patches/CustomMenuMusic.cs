@@ -4,14 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Networking;
 using HarmonyLib;
 using Comfort.Common;
 using System.Linq;
-using SoundtrackMod;
-using System.Threading.Tasks;
 
-namespace BobbyRenzobbi.CustomMenuMusic
+namespace BobbysMusicPlayer
 {
     public class CustomMusicPatch : ModulePatch
     {
@@ -26,6 +23,7 @@ namespace BobbyRenzobbi.CustomMenuMusic
         private static List<string> trackNamesArray = new List<string>();
         private static List<string> storedTrackNamesArray = new List<string>();
         internal static bool HasReloadedAudio = false;
+        Plugin plugin = new Plugin();
 
         protected override MethodBase GetTargetMethod()
         {
@@ -35,6 +33,10 @@ namespace BobbyRenzobbi.CustomMenuMusic
         internal async void LoadAudioClips()
         {
             HasReloadedAudio = true;
+            if (menuTrackList.IsNullOrEmpty())
+            {
+                return;
+            }
             trackArray.Clear();
             storedTrackArray.Clear();
             trackNamesArray.Clear();
@@ -46,7 +48,7 @@ namespace BobbyRenzobbi.CustomMenuMusic
                 int nextRandom = rand.Next(trackListToPlay.Count);
                 string track = trackListToPlay[nextRandom];
                 string trackPath = Path.GetFileName(track);
-                AudioClip unityAudioClip = await RequestAudioClip(track);
+                AudioClip unityAudioClip = await plugin.AsyncRequestAudioClip(track);
                 trackArray.Add(unityAudioClip);
                 trackNamesArray.Add(trackPath);
                 trackListToPlay.Remove(track);
@@ -57,32 +59,6 @@ namespace BobbyRenzobbi.CustomMenuMusic
             storedTrackNamesArray.AddRange(trackNamesArray);
             Plugin.LogSource.LogInfo("trackArray stored in storeTrackArray");
             totalLength = 0;
-        }
-
-        private async Task<AudioClip> RequestAudioClip(string path)
-        {
-            string extension = Path.GetExtension(path);
-            Dictionary<string, AudioType> audioType = new Dictionary<string, AudioType>
-            {
-                [".wav"] = AudioType.WAV,
-                [".ogg"] = AudioType.OGGVORBIS,
-                [".mp3"] = AudioType.MPEG
-            };
-            UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, audioType[extension]);
-            UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
-
-            while (!sendWeb.isDone)
-                await Task.Yield();
-            if (uwr.isNetworkError || uwr.isHttpError)
-            {
-                Logger.LogError("CustomMenuMusic: Failed To Fetch Audio Clip");
-                return null;
-            }
-            else
-            {
-                AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
-                return audioclip;
-            }
         }
 
         [PatchPrefix]
