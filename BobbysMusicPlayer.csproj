@@ -74,6 +74,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Patches\UISoundsPatch.cs" />
     <Compile Include="Patches\CustomMenuMusic.cs" />
     <Compile Include="Patches\RaidEndMusicPatch.cs" />
     <Compile Include="Plugin.cs" />

@@ -8,7 +8,7 @@ using HarmonyLib;
 using Comfort.Common;
 using System.Linq;
 
-namespace BobbysMusicPlayer
+namespace BobbysMusicPlayer.Patches
 {
     public class CustomMusicPatch : ModulePatch
     {

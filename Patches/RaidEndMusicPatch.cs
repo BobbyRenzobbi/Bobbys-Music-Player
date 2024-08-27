@@ -6,12 +6,17 @@ using System.Reflection;
 using UnityEngine;
 using HarmonyLib;
 
-namespace BobbysMusicPlayer
+namespace BobbysMusicPlayer.Patches
 {
     public class RaidEndMusicPatch : ModulePatch
     {
         internal static List<string> deathMusicList = new List<string>();
         internal static List<string> extractMusicList = new List<string>();
+        private Dictionary<EEndGameSoundType, List<string>> raidEndDictionary = new Dictionary<EEndGameSoundType, List<string>> 
+        {
+            [EEndGameSoundType.ArenaLose] = deathMusicList,
+            [EEndGameSoundType.ArenaWin] = extractMusicList
+        };
         private static AudioClip raidEndClip;
         Plugin plugin = new Plugin();
 
@@ -23,14 +28,9 @@ namespace BobbysMusicPlayer
         private void LoadNextTrack(EEndGameSoundType soundType)
         {
             string raidEndTrack;
-            if (soundType == EEndGameSoundType.ArenaLose && !deathMusicList.IsNullOrEmpty())
+            if (!raidEndDictionary[soundType].IsNullOrEmpty())
             {
-                raidEndTrack = deathMusicList[0];
-            }
-            else if (soundType == EEndGameSoundType.ArenaWin && !extractMusicList.IsNullOrEmpty())
-            {
-                raidEndTrack = extractMusicList[0];
-                
+                raidEndTrack = raidEndDictionary[soundType][0];
             }
             else
             {
@@ -38,7 +38,7 @@ namespace BobbysMusicPlayer
             }
             raidEndClip = plugin.RequestAudioClip(raidEndTrack);
             string trackPath = Path.GetFileName(raidEndTrack);
-            Logger.LogInfo(trackPath + " assigned to Death Music");
+            Logger.LogInfo(trackPath + " assigned to " + soundType);
         }
 
         [PatchPrefix]

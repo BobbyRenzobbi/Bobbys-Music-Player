@@ -10,6 +10,7 @@ using UnityEngine.Networking;
 using BepInEx.Configuration;
 using EFT;
 using Comfort.Common;
+using BobbysMusicPlayer.Patches;
 
 namespace BobbysMusicPlayer
 {
@@ -135,9 +136,15 @@ namespace BobbysMusicPlayer
             {
                 trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
             }
-            spawnTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music"));
-            RaidEndMusicPatch.deathMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic"));
-            RaidEndMusicPatch.extractMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic"));
+            spawnTrackList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music").FirstOrDefault());
+            RaidEndMusicPatch.deathMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic").FirstOrDefault());
+            RaidEndMusicPatch.extractMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic").FirstOrDefault());
+            int counter = 0;
+            foreach (var dir in UISoundsPatch.questSoundsDir)
+            {
+                UISoundsPatch.questSounds[counter] = (Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir).FirstOrDefault());
+                counter++;
+            }
             string settings = "Soundtrack Settings";
             SoundtrackVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music played in raid", new AcceptableValueRange<float>(0f, 1f)));
             SpawnMusicVolume = Config.Bind<float>(settings, "Spawn music volume", 0.06f, new ConfigDescription("Volume of the music played on spawn", new AcceptableValueRange<float>(0f, 1f)));
@@ -145,6 +152,7 @@ namespace BobbysMusicPlayer
             LogSource.LogInfo("plugin loaded!");
             new CustomMusicPatch().Enable();
             new RaidEndMusicPatch().Enable();
+            new UISoundsPatch().Enable();
             customMusicPatch.LoadAudioClips();
         }
 
