@@ -10,10 +10,10 @@ namespace BobbysMusicPlayer.Patches
 {
     public class UISoundsPatch : ModulePatch
     {
-        internal static string[] questSounds = new string[5];
-        internal static string[] questSoundsDir = new string[5] 
+        internal static string[] questSounds = new string[8];
+        internal static string[] questSoundsDir = new string[8]
         {
-            "QuestCompleted", "QuestFailed", "QuestFinished", "QuestStarted", "QuestSubtaskComplete"
+            "QuestCompleted", "QuestFailed", "QuestFinished", "QuestStarted", "QuestSubtaskComplete", "DeathSting", "ErrorSound", "TradeSound"
         };
         private static AudioClip replacementClip;
         Plugin plugin = new Plugin();
@@ -23,7 +23,10 @@ namespace BobbysMusicPlayer.Patches
             [EUISoundType.QuestFailed] = 1,
             [EUISoundType.QuestFinished] = 2,
             [EUISoundType.QuestStarted] = 3,
-            [EUISoundType.QuestSubTrackComplete] = 4
+            [EUISoundType.QuestSubTrackComplete] = 4,
+            [EUISoundType.PlayerIsDead] = 5,
+            [EUISoundType.ErrorMessage] = 6,
+            [EUISoundType.TradeOperationComplete] = 7
         };
 
         protected override MethodBase GetTargetMethod()
