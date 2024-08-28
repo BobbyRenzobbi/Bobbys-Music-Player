@@ -40,6 +40,8 @@ namespace BobbysMusicPlayer
         }
         public static ConfigEntry<float> SoundtrackVolume { get; set; }
         public static ConfigEntry<float> SpawnMusicVolume { get; set; }
+        public static ConfigEntry<int> SoundtrackLength { get; set; }
+        public static ConfigEntry<int> CustomMenuMusicLength { get; set; }
         public static ConfigEntry<ESoundtrackPlaylist> SoundtrackPlaylist;
         private static System.Random rand = new System.Random();
         internal async Task<AudioClip> AsyncRequestAudioClip(string path)
@@ -115,20 +117,20 @@ namespace BobbysMusicPlayer
         private static AudioClip spawnTrackClip = null;
         private static bool HasStartedLoadingAudio = false;
         private static bool HasFinishedLoadingAudio = false;
-        private static float targetLength = 3000f;
-        private static float totalLength = 0f;
         private static List<string> trackNamesArray = new List<string>();
         private static List<string> storedTrackNamesArray = new List<string>();
         private static bool spawnTrackHasPlayed = false;
 
         private async void LoadAudioClips()
         {
+            float totalLength = 0f;
             HasFinishedLoadingAudio = false;
             storedTrackArray.Clear();
             trackArray.Clear();
             storedTrackNamesArray.Clear();
             trackNamesArray.Clear();
             trackListToPlay.Clear();
+            float targetLength = 60f * SoundtrackLength.Value;
             if (mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location].IsNullOrEmpty() || SoundtrackPlaylist.Value == ESoundtrackPlaylist.DefaultPlaylistOnly)
             {
                 trackListToPlay.AddRange(defaultTrackList);
@@ -142,7 +144,7 @@ namespace BobbysMusicPlayer
             {
                 trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
             }
-            do
+            while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()))
             {
                 int nextRandom = rand.Next(trackListToPlay.Count);
                 string track = trackListToPlay[nextRandom];
@@ -153,12 +155,12 @@ namespace BobbysMusicPlayer
                 trackListToPlay.Remove(track);
                 totalLength += trackArray.Last().length;
                 LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
-            } while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()));
+            }
             storedTrackArray.AddRange(trackArray);
             storedTrackNamesArray.AddRange(trackNamesArray);
             LogSource.LogInfo("trackArray stored in storeTrackArray");
             HasFinishedLoadingAudio = true;
-            totalLength = 0;
+            totalLength = 0f;
         }
 
         private void Awake()
@@ -182,10 +184,13 @@ namespace BobbysMusicPlayer
                 UISoundsPatch.questSounds[counter] = (Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir).FirstOrDefault());
                 counter++;
             }
-            string settings = "Soundtrack Settings";
-            SoundtrackVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music played in raid", new AcceptableValueRange<float>(0f, 1f)));
-            SpawnMusicVolume = Config.Bind<float>(settings, "Spawn music volume", 0.06f, new ConfigDescription("Volume of the music played on spawn", new AcceptableValueRange<float>(0f, 1f)));
-            SoundtrackPlaylist = Config.Bind<ESoundtrackPlaylist>(settings, "Combine Default with Map Specific Playlist", ESoundtrackPlaylist.CombinedPlaylists, new ConfigDescription("- Map Specific Playlist Only: Playlist will only use music from the map's soundtrack folder. If it is empty, the default soundtrack folder will be used instead.\n- Combined Playlists: Playlist will combine music from the map's soundtrack folder and the default soundtrack folder.\n- Default Playlist Only: Playlist will only use music from the default soundtrack folder."));
+            string soundtrackSettings = "In-Raid Soundtrack Settings";
+            string customMenuMusicSettings = "Custom Menu Music Settings";
+            SoundtrackVolume = Config.Bind<float>(soundtrackSettings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music played in raid", new AcceptableValueRange<float>(0f, 1f), new ConfigurationManagerAttributes { Order = 3 }));
+            SpawnMusicVolume = Config.Bind<float>(soundtrackSettings, "Spawn music volume", 0.06f, new ConfigDescription("Volume of the music played on spawn", new AcceptableValueRange<float>(0f, 1f), new ConfigurationManagerAttributes { Order = 2 }));
+            SoundtrackPlaylist = Config.Bind<ESoundtrackPlaylist>(soundtrackSettings, "Soundtrack playlist selection", ESoundtrackPlaylist.CombinedPlaylists, new ConfigDescription("- Map Specific Playlist Only: Playlist will only use music from the map's soundtrack folder. If it is empty, the default soundtrack folder will be used instead.\n- Combined Playlists: Playlist will combine music from the map's soundtrack folder and the default soundtrack folder.\n- Default Playlist Only: Playlist will only use music from the default soundtrack folder.", null, new ConfigurationManagerAttributes { Order = 1 }));
+            SoundtrackLength = Config.Bind<int>(soundtrackSettings, "Soundtrack playlist length (Minutes)", 50, new ConfigDescription("The length of the playlist created for each raid.\nYou should keep this at 50 unless you have modified raid times.", new AcceptableValueRange<int>(0, 600), new ConfigurationManagerAttributes { Order = 0 }));
+            CustomMenuMusicLength = Config.Bind<int>(customMenuMusicSettings, "Menu Music playlist length (Minutes)", 60, new ConfigDescription("The length of the playlist created for the main menu.\nNote: This setting's changes will take place either on game restart, or after a raid.", new AcceptableValueRange<int>(0, 600), new ConfigurationManagerAttributes { Order = 0 }));
             LogSource = Logger;
             LogSource.LogInfo("plugin loaded!");
             new CustomMusicPatch().Enable();

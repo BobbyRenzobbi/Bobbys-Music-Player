@@ -18,8 +18,6 @@ namespace BobbysMusicPlayer.Patches
         private static List<AudioClip> trackArray = new List<AudioClip>();
         private static List<AudioClip> storedTrackArray = new List<AudioClip>();
         private static List<string> trackListToPlay = new List<string>();
-        private static float targetLength = 3600f;
-        private static float totalLength = 0f;
         private static List<string> trackNamesArray = new List<string>();
         private static List<string> storedTrackNamesArray = new List<string>();
         internal static bool HasReloadedAudio = false;
@@ -32,6 +30,7 @@ namespace BobbysMusicPlayer.Patches
 
         internal async void LoadAudioClips()
         {
+            float totalLength = 0;
             HasReloadedAudio = true;
             if (menuTrackList.IsNullOrEmpty())
             {
@@ -43,6 +42,7 @@ namespace BobbysMusicPlayer.Patches
             storedTrackNamesArray.Clear();
             trackListToPlay.Clear();
             trackListToPlay.AddRange(menuTrackList);
+            float targetLength = Plugin.CustomMenuMusicLength.Value * 60f;
             do
             {
                 int nextRandom = rand.Next(trackListToPlay.Count);
@@ -58,7 +58,6 @@ namespace BobbysMusicPlayer.Patches
             storedTrackArray.AddRange(trackArray);
             storedTrackNamesArray.AddRange(trackNamesArray);
             Plugin.LogSource.LogInfo("trackArray stored in storeTrackArray");
-            totalLength = 0;
         }
 
         [PatchPrefix]
