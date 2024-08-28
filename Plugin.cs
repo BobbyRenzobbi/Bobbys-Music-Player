@@ -33,6 +33,7 @@ namespace BobbysMusicPlayer
     {
         public static ConfigEntry<float> SoundtrackVolume { get; set; }
         public static ConfigEntry<float> SpawnMusicVolume { get; set; }
+        public static ConfigEntry<bool> CombineDefault { get; set; }
         private static System.Random rand = new System.Random();
         internal async Task<AudioClip> AsyncRequestAudioClip(string path)
         {
@@ -80,11 +81,28 @@ namespace BobbysMusicPlayer
             AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
             return audioclip;
         }
+        private static string mapSpecificDir = AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\map_specific_soundtrack";
         private static CustomMusicPatch customMusicPatch = new CustomMusicPatch();
         private static List<AudioClip> trackArray = new List<AudioClip>();
         private static List<AudioClip> storedTrackArray = new List<AudioClip>();
         internal static ManualLogSource LogSource;
-        private static List<string> trackList = new List<string>();
+        private static List<string> defaultTrackList = new List<string>();
+        private static Dictionary<string, string[]> mapDictionary = new Dictionary<string, string[]>
+        {
+            ["rezervbase"] = Directory.GetFiles(mapSpecificDir + "\\reserve"),
+            ["bigmap"] = Directory.GetFiles(mapSpecificDir + "\\customs"),
+            ["factory4_night"] = Directory.GetFiles(mapSpecificDir + "\\factory"),
+            ["factory4_day"] = Directory.GetFiles(mapSpecificDir + "\\factory"),
+            ["interchange"] = Directory.GetFiles(mapSpecificDir + "\\interchange"),
+            ["laboratory"] = Directory.GetFiles(mapSpecificDir + "\\labs"),
+            ["shoreline"] = Directory.GetFiles(mapSpecificDir + "\\shoreline"),
+            ["sandbox"] = Directory.GetFiles(mapSpecificDir + "\\ground_zero"),
+            ["sandbox_high"] = Directory.GetFiles(mapSpecificDir + "\\ground_zero"),
+            ["woods"] = Directory.GetFiles(mapSpecificDir + "\\woods"),
+            ["lighthouse"] = Directory.GetFiles(mapSpecificDir + "\\lighthouse"),
+            ["tarkovstreets"] = Directory.GetFiles(mapSpecificDir + "\\streets")
+
+        };
         private static List<string> trackListToPlay = new List<string>();
         private static List<string> spawnTrackList = new List<string>();
         private static AudioClip spawnTrackClip = null;
@@ -104,7 +122,19 @@ namespace BobbysMusicPlayer
             storedTrackNamesArray.Clear();
             trackNamesArray.Clear();
             trackListToPlay.Clear();
-            trackListToPlay.AddRange(trackList);
+            if (mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location].IsNullOrEmpty())
+            {
+                trackListToPlay.AddRange(defaultTrackList);
+            }
+            else if (CombineDefault.Value)
+            {
+                trackListToPlay.AddRange(defaultTrackList);
+                trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
+            }
+            else if (!CombineDefault.Value)
+            {
+                trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
+            }
             do
             {
                 int nextRandom = rand.Next(trackListToPlay.Count);
@@ -131,10 +161,10 @@ namespace BobbysMusicPlayer
             {
                 CustomMusicPatch.menuTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\CustomMenuMusic\\sounds"));
             }
-            trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\sounds"));
-            if (trackList.IsNullOrEmpty() && Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"))
+            defaultTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\default_soundtrack"));
+            if (defaultTrackList.IsNullOrEmpty() && Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"))
             {
-                trackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
+                defaultTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
             }
             spawnTrackList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music").FirstOrDefault());
             RaidEndMusicPatch.deathMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic").FirstOrDefault());
@@ -148,6 +178,7 @@ namespace BobbysMusicPlayer
             string settings = "Soundtrack Settings";
             SoundtrackVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music played in raid", new AcceptableValueRange<float>(0f, 1f)));
             SpawnMusicVolume = Config.Bind<float>(settings, "Spawn music volume", 0.06f, new ConfigDescription("Volume of the music played on spawn", new AcceptableValueRange<float>(0f, 1f)));
+            CombineDefault = Config.Bind<bool>(settings, "Combine Default with Map Specific Playlist", true, new ConfigDescription("This setting cannot be changed in-raid.\nTurning this setting on will combine the default \"sounds\" folder with the map specific Soundtrack.\nTurning this setting off will only use the map specific Soundtrack if it exists."));
             LogSource = Logger;
             LogSource.LogInfo("plugin loaded!");
             new CustomMusicPatch().Enable();
@@ -188,7 +219,7 @@ namespace BobbysMusicPlayer
             if (!HasStartedLoadingAudio)
             {
                 HasStartedLoadingAudio = true;
-                if (!trackList.IsNullOrEmpty())
+                if (!defaultTrackList.IsNullOrEmpty())
                 {
                     LoadAudioClips();
                 }
