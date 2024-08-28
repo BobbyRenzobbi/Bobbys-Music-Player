@@ -19,6 +19,7 @@ namespace BobbysMusicPlayer
     {
         public static AudioSource soundtrackAudioSource;
         public static AudioSource spawnAudioSource;
+        public static AudioSource combatAudioSource;
         public static void SetClip(AudioSource audiosource, AudioClip clip)
         {
             audiosource.clip = clip;
@@ -31,9 +32,15 @@ namespace BobbysMusicPlayer
     [BepInPlugin("BobbyRenzobbi.MusicPlayer", "BobbysMusicPlayer", "1.1.3")]
     public class Plugin : BaseUnityPlugin
     {
+        public enum ESoundtrackPlaylist
+        {
+            MapSpecificPlaylistOnly,
+            CombinedPlaylists,
+            DefaultPlaylistOnly
+        }
         public static ConfigEntry<float> SoundtrackVolume { get; set; }
         public static ConfigEntry<float> SpawnMusicVolume { get; set; }
-        public static ConfigEntry<bool> CombineDefault { get; set; }
+        public static ConfigEntry<ESoundtrackPlaylist> SoundtrackPlaylist;
         private static System.Random rand = new System.Random();
         internal async Task<AudioClip> AsyncRequestAudioClip(string path)
         {
@@ -73,11 +80,11 @@ namespace BobbysMusicPlayer
             UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
 
             while (!sendWeb.isDone)
-            if (uwr.isNetworkError || uwr.isHttpError)
-            {
-                Logger.LogError("Soundtrack: Failed To Fetch Audio Clip");
-                return null;
-            }
+                if (uwr.isNetworkError || uwr.isHttpError)
+                {
+                    Logger.LogError("Soundtrack: Failed To Fetch Audio Clip");
+                    return null;
+                }
             AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
             return audioclip;
         }
@@ -122,16 +129,16 @@ namespace BobbysMusicPlayer
             storedTrackNamesArray.Clear();
             trackNamesArray.Clear();
             trackListToPlay.Clear();
-            if (mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location].IsNullOrEmpty())
+            if (mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location].IsNullOrEmpty() || SoundtrackPlaylist.Value == ESoundtrackPlaylist.DefaultPlaylistOnly)
             {
                 trackListToPlay.AddRange(defaultTrackList);
             }
-            else if (CombineDefault.Value)
+            else if (SoundtrackPlaylist.Value == ESoundtrackPlaylist.CombinedPlaylists)
             {
                 trackListToPlay.AddRange(defaultTrackList);
                 trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
             }
-            else if (!CombineDefault.Value)
+            else if (SoundtrackPlaylist.Value == ESoundtrackPlaylist.MapSpecificPlaylistOnly)
             {
                 trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
             }
@@ -178,7 +185,7 @@ namespace BobbysMusicPlayer
             string settings = "Soundtrack Settings";
             SoundtrackVolume = Config.Bind<float>(settings, "In-raid music volume", 0.025f, new ConfigDescription("Volume of the music played in raid", new AcceptableValueRange<float>(0f, 1f)));
             SpawnMusicVolume = Config.Bind<float>(settings, "Spawn music volume", 0.06f, new ConfigDescription("Volume of the music played on spawn", new AcceptableValueRange<float>(0f, 1f)));
-            CombineDefault = Config.Bind<bool>(settings, "Combine Default with Map Specific Playlist", true, new ConfigDescription("This setting cannot be changed in-raid.\nTurning this setting on will combine the default \"sounds\" folder with the map specific Soundtrack.\nTurning this setting off will only use the map specific Soundtrack if it exists."));
+            SoundtrackPlaylist = Config.Bind<ESoundtrackPlaylist>(settings, "Combine Default with Map Specific Playlist", ESoundtrackPlaylist.CombinedPlaylists, new ConfigDescription("- Map Specific Playlist Only: Playlist will only use music from the map's soundtrack folder. If it is empty, the default soundtrack folder will be used instead.\n- Combined Playlists: Playlist will combine music from the map's soundtrack folder and the default soundtrack folder.\n- Default Playlist Only: Playlist will only use music from the default soundtrack folder."));
             LogSource = Logger;
             LogSource.LogInfo("plugin loaded!");
             new CustomMusicPatch().Enable();
