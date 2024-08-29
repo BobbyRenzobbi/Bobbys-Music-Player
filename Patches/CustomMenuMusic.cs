@@ -7,19 +7,20 @@ using UnityEngine;
 using HarmonyLib;
 using Comfort.Common;
 using System.Linq;
+using EFT;
+using System;
 
 namespace BobbysMusicPlayer.Patches
 {
+    
     public class CustomMusicPatch : ModulePatch
     {
-        private static List<AudioClip> audioClips = new List<AudioClip>();
+        internal static int trackCounter;
         private static System.Random rand = new System.Random();
         internal static List<string> menuTrackList = new List<string>();
-        private static List<AudioClip> trackArray = new List<AudioClip>();
-        private static List<AudioClip> storedTrackArray = new List<AudioClip>();
+        internal static List<AudioClip> trackArray = new List<AudioClip>();
         private static List<string> trackListToPlay = new List<string>();
         private static List<string> trackNamesArray = new List<string>();
-        private static List<string> storedTrackNamesArray = new List<string>();
         internal static bool HasReloadedAudio = false;
         Plugin plugin = new Plugin();
 
@@ -37,9 +38,7 @@ namespace BobbysMusicPlayer.Patches
                 return;
             }
             trackArray.Clear();
-            storedTrackArray.Clear();
             trackNamesArray.Clear();
-            storedTrackNamesArray.Clear();
             trackListToPlay.Clear();
             trackListToPlay.AddRange(menuTrackList);
             float targetLength = Plugin.CustomMenuMusicLength.Value * 60f;
@@ -55,35 +54,33 @@ namespace BobbysMusicPlayer.Patches
                 totalLength += trackArray.Last().length;
                 Plugin.LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
             } while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()));
-            storedTrackArray.AddRange(trackArray);
-            storedTrackNamesArray.AddRange(trackNamesArray);
             Plugin.LogSource.LogInfo("trackArray stored in storeTrackArray");
         }
 
         [PatchPrefix]
-        static bool Prefix()
+        static bool Prefix(AudioSource ___audioSource_3)
         {
             if (menuTrackList.IsNullOrEmpty())
             {
                 return true;
             }
-            audioClips.Clear();
-            audioClips.Add(trackArray[0]);
-            audioClips.Add(trackArray[0]);
-            trackArray.RemoveAt(0);
-            //Credit to SamSWAT for discovering that the game loads infinitely if the audioClip_0 array has only one element
-            if (trackArray.IsNullOrEmpty())
+            Audio.menuMusicAudioSource = ___audioSource_3;
+            if (trackArray.Count == 1)
             {
-                trackArray.AddRange(storedTrackArray);
+                trackCounter = 0;
             }
-            Traverse.Create(Singleton<GUISounds>.Instance).Field("audioClip_0").SetValue(audioClips.ToArray());
-            Plugin.LogSource.LogInfo("Playing " + trackNamesArray[0]);
-            trackNamesArray.RemoveAt(0);
-            if (trackNamesArray.IsNullOrEmpty())
+            Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
+            Audio.menuMusicAudioSource.Play();
+            Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
+            trackCounter++;
+            CustomMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
+            if (trackCounter >= trackArray.Count)
             {
-                trackNamesArray.AddRange(storedTrackNamesArray);
+                trackCounter = 0;
             }
-            return true;
+            return false;
+            
+            
         }
     }
 }
