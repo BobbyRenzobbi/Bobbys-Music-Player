@@ -22,7 +22,7 @@ namespace BobbysMusicPlayer
         private static float pausedTime = 0f;
         public static void menuMusicControls()
         {
-            if (!SoundtrackJukebox.soundtrackCalled)
+            if (!SoundtrackJukebox.soundtrackCalled && Audio.menuMusicAudioSource != null)
             {
                 if (Input.GetKeyDown(Plugin.pauseTrack.Value.MainKey) && Audio.menuMusicAudioSource.isPlaying)
                 {
