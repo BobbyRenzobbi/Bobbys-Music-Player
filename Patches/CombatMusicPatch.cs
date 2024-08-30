@@ -28,10 +28,15 @@ namespace BobbysMusicPlayer.Patches
                 Plugin.combatTimer = Plugin.CombatAttackedEntryTime.Value;
                 Plugin.LogSource.LogInfo("Player shot at. Combat Timer set to " + Plugin.combatTimer);
             }
+            else
+            {
+                Plugin.LogSource.LogInfo("Player shot at");
+            }
         }
     }
     public class PlayerFiringPatch : ModulePatch
     {
+        internal static bool playerFired = false;
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(Player), nameof(Player.OnMakingShot));
@@ -45,10 +50,15 @@ namespace BobbysMusicPlayer.Patches
             {
                 return true;
             }
+            playerFired = true;
             if (Plugin.combatTimer < Plugin.CombatFireEntryTime.Value)
             {
                 Plugin.combatTimer = Plugin.CombatFireEntryTime.Value;
                 Plugin.LogSource.LogInfo("Player fired. Combat timer set to " + Plugin.CombatFireEntryTime.Value);
+            }
+            else
+            {
+                Plugin.LogSource.LogInfo("Player fired");
             }
             return true;
         }
@@ -78,6 +88,41 @@ namespace BobbysMusicPlayer.Patches
                     Plugin.combatTimer = Plugin.CombatHitEntryTime.Value;
                     Plugin.LogSource.LogInfo("Player hit. Combat timer set to " + Plugin.CombatHitEntryTime.Value);
                 }
+                else
+                {
+                    Plugin.LogSource.LogInfo("Player hit");
+                }
+            }
+            return true;
+        }
+    }
+    public class ShotFiredNearPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(WeaponSoundPlayer), nameof(WeaponSoundPlayer.FireBullet));
+        }
+        [PatchPrefix]
+        private static bool Prefix(Vector3 shotPosition)
+        {
+            Player player = Singleton<GameWorld>.Instance.MainPlayer;
+            float distance = Vector3.Distance(player.Position, shotPosition);
+            if (distance < Plugin.ShotNearCutoff.Value)
+            {
+                if (PlayerFiringPatch.playerFired == true)
+                {
+                    PlayerFiringPatch.playerFired = false;
+                    return true;
+                }
+                if (Plugin.combatTimer < Plugin.CombatDangerEntryTime.Value)
+                {
+                    Plugin.combatTimer = Plugin.CombatDangerEntryTime.Value * (distance/Plugin.ShotNearCutoff.Value);
+                    Plugin.LogSource.LogInfo("Player shot near. Combat Timer set to " + Plugin.combatTimer);
+                }
+            }
+            else
+            {
+                Plugin.LogSource.LogInfo("Enemy shot fired past cutoff distance");
             }
             return true;
         }
