@@ -13,7 +13,7 @@ using System;
 namespace BobbysMusicPlayer.Patches
 {
     
-    public class CustomMusicPatch : ModulePatch
+    public class MenuMusicPatch : ModulePatch
     {
         internal static int trackCounter;
         private static System.Random rand = new System.Random();

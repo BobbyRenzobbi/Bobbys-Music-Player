@@ -79,8 +79,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigurationManagerAttributes.cs" />
+    <Compile Include="Patches\CombatMusicPatch.cs" />
     <Compile Include="Patches\UISoundsPatch.cs" />
-    <Compile Include="Patches\CustomMenuMusic.cs" />
+    <Compile Include="Patches\MenuMusicPatch.cs" />
     <Compile Include="Patches\RaidEndMusicPatch.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
