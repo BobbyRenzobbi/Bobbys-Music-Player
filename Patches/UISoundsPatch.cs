@@ -10,7 +10,7 @@ namespace BobbysMusicPlayer.Patches
 {
     public class UISoundsPatch : ModulePatch
     {
-        internal static string[] questSounds = new string[8];
+        internal static List<List<string>> questSounds = new List<List<string>>();
         internal static string[] questSoundsDir = new string[8]
         {
             "QuestCompleted", "QuestFailed", "QuestFinished", "QuestStarted", "QuestSubtaskComplete", "DeathSting", "ErrorSound", "TradeSound"
@@ -37,9 +37,9 @@ namespace BobbysMusicPlayer.Patches
         private void LoadNextTrack(EUISoundType soundType)
         {
             string replacementTrack;
-            if (UISoundDictionary.ContainsKey(soundType) && questSounds[UISoundDictionary[soundType]] != null)
+            if (UISoundDictionary.ContainsKey(soundType) && !questSounds[UISoundDictionary[soundType]].IsNullOrEmpty())
             {
-                replacementTrack = questSounds[UISoundDictionary[soundType]];
+                replacementTrack = questSounds[UISoundDictionary[soundType]][Plugin.rand.Next(questSounds[UISoundDictionary[soundType]].Count)];
             }
             else
             {

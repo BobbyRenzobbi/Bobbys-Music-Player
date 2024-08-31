@@ -202,7 +202,7 @@ namespace BobbysMusicPlayer
         public static ConfigEntry<float> CombatOutFader { get; set; }
         public static ConfigEntry<float> ShotNearCutoff { get; set; }
         public static ConfigEntry<float> IndoorMultiplier { get; set; }
-        private static System.Random rand = new System.Random();
+        internal static System.Random rand = new System.Random();
         internal async Task<AudioClip> AsyncRequestAudioClip(string path)
         {
             string extension = Path.GetExtension(path);
@@ -331,7 +331,6 @@ namespace BobbysMusicPlayer
             {
                 if (!Audio.combatAudioSource.isPlaying)
                 {
-                    Audio.combatAudioSource.clip = combatMusicClipList[rand.Next(combatMusicClipList.Count)];
                     Audio.combatAudioSource.Play();
                 }
                 if (lerp <= 1)
@@ -341,19 +340,23 @@ namespace BobbysMusicPlayer
                 }
                 combatTimer -= Time.deltaTime;
             }
-            else if (combatTimer <= 0 && Audio.combatAudioSource != null && Audio.combatAudioSource.isPlaying && !combatMusicTrackList.IsNullOrEmpty())
+            else if (combatTimer <= 0 && Audio.combatAudioSource != null && !combatMusicTrackList.IsNullOrEmpty())
             {
-                combatTimer = 0f;
-                CombatLerp();
-                lerp -= Time.deltaTime / CombatOutFader.Value;
-                if (lerp <= 0)
+                if (Audio.combatAudioSource.isPlaying )
                 {
-                    Audio.combatAudioSource.Stop();
+                    combatTimer = 0f;
+                    CombatLerp();
+                    lerp -= Time.deltaTime / CombatOutFader.Value;
+                    if (lerp <= 0)
+                    {
+                        Audio.combatAudioSource.Stop();
+                        Audio.combatAudioSource.clip = combatMusicClipList[rand.Next(combatMusicClipList.Count)];
+                    }
                 }
-            }
-            else
-            {
-                VolumeSetter();
+                else if (lerp > 0)
+                {
+                    Audio.combatAudioSource.Play();
+                }
             }
         }
 
@@ -366,6 +369,10 @@ namespace BobbysMusicPlayer
             if (Audio.spawnAudioSource != null)
             {
                 Audio.AdjustVolume(Audio.spawnAudioSource, SpawnMusicVolume.Value);
+            }
+            if (Audio.combatAudioSource != null && lerp >= 1)
+            {
+                Audio.combatAudioSource.volume = CombatMusicVolume.Value;
             }
         }
 
@@ -392,6 +399,7 @@ namespace BobbysMusicPlayer
                     foreach (var track in combatMusicTrackList)
                     {
                         combatMusicClipList.Add(RequestAudioClip(track));
+                        Audio.combatAudioSource.clip = combatMusicClipList[rand.Next(combatMusicClipList.Count)];
                     }
                 }
             }
@@ -422,13 +430,14 @@ namespace BobbysMusicPlayer
                 defaultTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
             }
             combatMusicTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\combat_music"));
-            spawnTrackList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music").FirstOrDefault());
-            RaidEndMusicPatch.deathMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic").FirstOrDefault());
-            RaidEndMusicPatch.extractMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic").FirstOrDefault());
+            spawnTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music"));
+            RaidEndMusicPatch.deathMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic"));
+            RaidEndMusicPatch.extractMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic"));
             int counter = 0;
             foreach (var dir in UISoundsPatch.questSoundsDir)
             {
-                UISoundsPatch.questSounds[counter] = (Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir).FirstOrDefault());
+                UISoundsPatch.questSounds.Add(new List<string>());
+                UISoundsPatch.questSounds[counter].AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir));
                 counter++;
             }
 
@@ -475,6 +484,7 @@ namespace BobbysMusicPlayer
             CustomMusicJukebox.MenuMusicControls();
             SoundtrackJukebox.SoundtrackControls();
             CombatMusic();
+            VolumeSetter();
             if (Singleton<GameWorld>.Instance == null && !MenuMusicPatch.HasReloadedAudio)
             {
                 menuMusicPatch.LoadAudioClips();

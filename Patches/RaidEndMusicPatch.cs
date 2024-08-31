@@ -28,9 +28,9 @@ namespace BobbysMusicPlayer.Patches
         private void LoadNextTrack(EEndGameSoundType soundType)
         {
             string raidEndTrack;
-            if (!raidEndDictionary[soundType][0].IsNullOrEmpty())
+            if (!raidEndDictionary[soundType].IsNullOrEmpty())
             {
-                raidEndTrack = raidEndDictionary[soundType][0];
+                raidEndTrack = raidEndDictionary[soundType][Plugin.rand.Next(raidEndDictionary[soundType].Count)];
             }
             else
             {
