@@ -253,7 +253,7 @@ namespace BobbysMusicPlayer
         private static MenuMusicPatch menuMusicPatch = new MenuMusicPatch();
         internal static List<AudioClip> trackArray = new List<AudioClip>();
         internal static ManualLogSource LogSource;
-        internal static List<string> defaultTrackList = new List<string>();
+        private static List<string> defaultTrackList = new List<string>();
         private static Dictionary<string, string[]> mapDictionary = new Dictionary<string, string[]>
         {
             ["rezervbase"] = Directory.GetFiles(mapSpecificDir + "\\reserve"),
@@ -270,11 +270,8 @@ namespace BobbysMusicPlayer
             ["tarkovstreets"] = Directory.GetFiles(mapSpecificDir + "\\streets")
 
         };
-        private static Dictionary<int, float> combatDict = new Dictionary<int, float>();
         private static Dictionary<EnvironmentType, float> environmentDict = new Dictionary<EnvironmentType, float>();
-        internal static float enterCombatLerp = 0f;
-        internal static float exitCombatLerp = 0f;
-        internal static float lerp = 0f;
+        private static float lerp = 0f;
         internal static float combatTimer = 0f;
         private static float soundtrackVolume = 0f;
         private static List<string> combatMusicTrackList = new List<string>();
@@ -340,7 +337,7 @@ namespace BobbysMusicPlayer
                 if (lerp <= 1)
                 {
                     CombatLerp();
-                    lerp += Time.deltaTime / combatDict[0];
+                    lerp += Time.deltaTime / CombatInFader.Value;
                 }
                 combatTimer -= Time.deltaTime;
             }
@@ -348,7 +345,7 @@ namespace BobbysMusicPlayer
             {
                 combatTimer = 0f;
                 CombatLerp();
-                lerp -= Time.deltaTime / combatDict[1];
+                lerp -= Time.deltaTime / CombatOutFader.Value;
                 if (lerp <= 0)
                 {
                     Audio.combatAudioSource.Stop();
@@ -468,8 +465,6 @@ namespace BobbysMusicPlayer
 
         private void Update()
         {
-            combatDict[0] = CombatInFader.Value;
-            combatDict[1] = CombatOutFader.Value;
             environmentDict[EnvironmentType.Indoor] = IndoorMultiplier.Value;
             CustomMusicJukebox.MenuMusicControls();
             SoundtrackJukebox.SoundtrackControls();
