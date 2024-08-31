@@ -84,20 +84,20 @@ namespace BobbysMusicPlayer
         private static float pausedTime = 0f;
         public static void PlaySoundtrack()
         {
-            if (!soundtrackCalled || Audio.soundtrackAudioSource.isPlaying || paused || Audio.spawnAudioSource.isPlaying || Plugin.trackArray.IsNullOrEmpty() || !Plugin.HasFinishedLoadingAudio)
+            if (!soundtrackCalled || Audio.soundtrackAudioSource.isPlaying || paused || Audio.spawnAudioSource.isPlaying || Plugin.ambientTrackArray.IsNullOrEmpty() || !Plugin.HasFinishedLoadingAudio)
             {
                 return;
             }
-            if (Plugin.trackArray.Count == 1)
+            if (Plugin.ambientTrackArray.Count == 1)
             {
                 trackCounter = 0;
             }
-            Audio.soundtrackAudioSource.clip = Plugin.trackArray[trackCounter];
+            Audio.soundtrackAudioSource.clip = Plugin.ambientTrackArray[trackCounter];
             Audio.soundtrackAudioSource.Play();
-            Plugin.LogSource.LogInfo("Playing " + Plugin.trackNamesArray[trackCounter]);
+            Plugin.LogSource.LogInfo("Playing " + Plugin.ambientTrackNamesArray[trackCounter]);
             trackCounter++;
             soundtrackCoroutine = StaticManager.Instance.WaitSeconds(Audio.soundtrackAudioSource.clip.length, new Action(PlaySoundtrack));
-            if (trackCounter >= Plugin.trackArray.Count)
+            if (trackCounter >= Plugin.ambientTrackArray.Count)
             {
                 trackCounter = 0;
             }
@@ -130,7 +130,7 @@ namespace BobbysMusicPlayer
                 }
                 else
                 {
-                    trackCounter = Plugin.trackArray.Count - 1;
+                    trackCounter = Plugin.ambientTrackArray.Count - 1;
                 }
                 StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
                 paused = false;
@@ -142,7 +142,7 @@ namespace BobbysMusicPlayer
                 trackCounter -= 2;
                 if (trackCounter < 0)
                 {
-                    trackCounter = Plugin.trackArray.Count + (trackCounter);
+                    trackCounter = Plugin.ambientTrackArray.Count + (trackCounter);
                 }
                 StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
                 paused = false;
@@ -251,7 +251,7 @@ namespace BobbysMusicPlayer
         }
         private static string mapSpecificDir = AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\map_specific_soundtrack";
         private static MenuMusicPatch menuMusicPatch = new MenuMusicPatch();
-        internal static List<AudioClip> trackArray = new List<AudioClip>();
+        internal static List<AudioClip> ambientTrackArray = new List<AudioClip>();
         internal static ManualLogSource LogSource;
         private static List<string> defaultTrackList = new List<string>();
         private static Dictionary<string, string[]> mapDictionary = new Dictionary<string, string[]>
@@ -275,46 +275,46 @@ namespace BobbysMusicPlayer
         internal static float combatTimer = 0f;
         private static float soundtrackVolume = 0f;
         private static List<string> combatMusicTrackList = new List<string>();
-        private static AudioClip combatMusicClip;
-        private static List<string> trackListToPlay = new List<string>();
+        private static List<AudioClip> combatMusicClipList = new List<AudioClip>();
+        private static List<string> ambientTrackListToPlay = new List<string>();
         private static List<string> spawnTrackList = new List<string>();
-        private static AudioClip spawnTrackClip = null;
+        private static List<AudioClip> spawnTrackClipList = new List<AudioClip>();
         private static bool HasStartedLoadingAudio = false;
         internal static bool HasFinishedLoadingAudio = false;
-        internal static List<string> trackNamesArray = new List<string>();
+        internal static List<string> ambientTrackNamesArray = new List<string>();
         private static bool spawnTrackHasPlayed = false;
 
-        private async void LoadAudioClips()
+        private async void LoadAmbientSoundtrackClips()
         {
             float totalLength = 0f;
             HasFinishedLoadingAudio = false;
-            trackArray.Clear();
-            trackNamesArray.Clear();
-            trackListToPlay.Clear();
+            ambientTrackArray.Clear();
+            ambientTrackNamesArray.Clear();
+            ambientTrackListToPlay.Clear();
             float targetLength = 60f * SoundtrackLength.Value;
             if (mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location.ToLower()].IsNullOrEmpty() || SoundtrackPlaylist.Value == ESoundtrackPlaylist.DefaultPlaylistOnly)
             {
-                trackListToPlay.AddRange(defaultTrackList);
+                ambientTrackListToPlay.AddRange(defaultTrackList);
             }
             else if (SoundtrackPlaylist.Value == ESoundtrackPlaylist.CombinedPlaylists)
             {
-                trackListToPlay.AddRange(defaultTrackList);
-                trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
+                ambientTrackListToPlay.AddRange(defaultTrackList);
+                ambientTrackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
             }
             else if (SoundtrackPlaylist.Value == ESoundtrackPlaylist.MapSpecificPlaylistOnly)
             {
-                trackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
+                ambientTrackListToPlay.AddRange(mapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location]);
             }
-            while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()))
+            while ((totalLength < targetLength) && (!ambientTrackListToPlay.IsNullOrEmpty()))
             {
-                int nextRandom = rand.Next(trackListToPlay.Count);
-                string track = trackListToPlay[nextRandom];
+                int nextRandom = rand.Next(ambientTrackListToPlay.Count);
+                string track = ambientTrackListToPlay[nextRandom];
                 string trackPath = Path.GetFileName(track);
                 AudioClip unityAudioClip = await AsyncRequestAudioClip(track);
-                trackArray.Add(unityAudioClip);
-                trackNamesArray.Add(trackPath);
-                trackListToPlay.Remove(track);
-                totalLength += trackArray.Last().length;
+                ambientTrackArray.Add(unityAudioClip);
+                ambientTrackNamesArray.Add(trackPath);
+                ambientTrackListToPlay.Remove(track);
+                totalLength += ambientTrackArray.Last().length;
                 LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
             }
             HasFinishedLoadingAudio = true;
@@ -331,7 +331,7 @@ namespace BobbysMusicPlayer
             {
                 if (!Audio.combatAudioSource.isPlaying)
                 {
-                    Audio.combatAudioSource.clip = combatMusicClip;
+                    Audio.combatAudioSource.clip = combatMusicClipList[rand.Next(combatMusicClipList.Count)];
                     Audio.combatAudioSource.Play();
                 }
                 if (lerp <= 1)
@@ -376,26 +376,32 @@ namespace BobbysMusicPlayer
                 HasStartedLoadingAudio = true;
                 if (!defaultTrackList.IsNullOrEmpty())
                 {
-                    LoadAudioClips();
+                    LoadAmbientSoundtrackClips();
                 }
-                if (!spawnTrackList[0].IsNullOrEmpty())
+                if (!spawnTrackList.IsNullOrEmpty())
                 {
-                    spawnTrackClip = RequestAudioClip(spawnTrackList[0]);
-                    LogSource.LogInfo("RequestAudioClip called for spawnTrackClip");
+                    foreach (var track in spawnTrackList)
+                    {
+                        spawnTrackClipList.Add(RequestAudioClip(track));
+                        LogSource.LogInfo("RequestAudioClip called for spawnTrackClip");
+                    }
                     spawnTrackHasPlayed = false;
                 }
-                if (!combatMusicTrackList[0].IsNullOrEmpty())
+                if (!combatMusicTrackList.IsNullOrEmpty())
                 {
-                    combatMusicClip = RequestAudioClip(combatMusicTrackList[0]);
+                    foreach (var track in combatMusicTrackList)
+                    {
+                        combatMusicClipList.Add(RequestAudioClip(track));
+                    }
                 }
             }
         }
 
         private void PlaySpawnMusic()
         {
-            if (!spawnTrackHasPlayed && spawnTrackClip != null)
+            if (!spawnTrackHasPlayed && !spawnTrackClipList.IsNullOrEmpty())
             {
-                Audio.spawnAudioSource.clip = spawnTrackClip;
+                Audio.spawnAudioSource.clip = spawnTrackClipList[rand.Next(spawnTrackClipList.Count)];
                 LogSource.LogInfo("spawnAudioSource.clip assigned to spawnTrackClip");
                 Audio.spawnAudioSource.Play();
                 LogSource.LogInfo("spawnAudioSource playing");
@@ -415,7 +421,7 @@ namespace BobbysMusicPlayer
             {
                 defaultTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\Soundtrack\\sounds"));
             }
-            combatMusicTrackList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\combat_music").FirstOrDefault());
+            combatMusicTrackList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\combat_music"));
             spawnTrackList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\Soundtrack\\spawn_music").FirstOrDefault());
             RaidEndMusicPatch.deathMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic").FirstOrDefault());
             RaidEndMusicPatch.extractMusicList.Add(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic").FirstOrDefault());
