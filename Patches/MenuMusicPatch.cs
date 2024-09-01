@@ -58,7 +58,7 @@ namespace BobbysMusicPlayer.Patches
         }
 
         [PatchPrefix]
-        static bool Prefix(AudioSource ___audioSource_3, AudioClip[] ___audioClip_0, int ___int_0)
+        static bool Prefix(AudioSource ___audioSource_3, AudioClip[] ___audioClip_0)
         {
             Audio.menuMusicAudioSource = ___audioSource_3;
             if (menuTrackList.IsNullOrEmpty())
