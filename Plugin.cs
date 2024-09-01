@@ -195,12 +195,14 @@ namespace BobbysMusicPlayer
         public static ConfigEntry<float> AmbientCombatMultiplier { get; set; }
         public static ConfigEntry<float> CombatAttackedEntryTime { get; set; }
         public static ConfigEntry<float> CombatDangerEntryTime { get; set; }
+        public static ConfigEntry<float> CombatGrenadeEntryTime { get; set; }
         public static ConfigEntry<float> CombatFireEntryTime { get; set; }
         public static ConfigEntry<float> CombatHitEntryTime { get; set; }
         public static ConfigEntry<float> CombatMusicVolume { get; set; }
         public static ConfigEntry<float> CombatInFader { get; set; }
         public static ConfigEntry<float> CombatOutFader { get; set; }
         public static ConfigEntry<float> ShotNearCutoff { get; set; }
+        public static ConfigEntry<float> GrenadeNearCutoff { get; set; }
         public static ConfigEntry<float> IndoorMultiplier { get; set; }
         internal static System.Random rand = new System.Random();
         internal async Task<AudioClip> AsyncRequestAudioClip(string path)
@@ -324,6 +326,7 @@ namespace BobbysMusicPlayer
         {
             Audio.AdjustVolume(Audio.combatAudioSource, Mathf.Lerp(0f, CombatMusicVolume.Value, lerp));
             Audio.AdjustVolume(Audio.soundtrackAudioSource, Mathf.Lerp(soundtrackVolume, AmbientCombatMultiplier.Value*soundtrackVolume, lerp));
+            Audio.AdjustVolume(Audio.spawnAudioSource, Mathf.Lerp(SpawnMusicVolume.Value, AmbientCombatMultiplier.Value*SpawnMusicVolume.Value, lerp));
         }
         private void CombatMusic()
         {
@@ -362,17 +365,23 @@ namespace BobbysMusicPlayer
 
         private void VolumeSetter()
         {
-            if (Audio.soundtrackAudioSource != null && (!Audio.combatAudioSource.isPlaying))
+            if (Audio.combatAudioSource != null)
             {
-                Audio.AdjustVolume(Audio.soundtrackAudioSource, soundtrackVolume);
-            }
-            if (Audio.spawnAudioSource != null)
-            {
-                Audio.AdjustVolume(Audio.spawnAudioSource, SpawnMusicVolume.Value);
-            }
-            if (Audio.combatAudioSource != null && lerp >= 1)
-            {
-                Audio.combatAudioSource.volume = CombatMusicVolume.Value;
+                if (!Audio.combatAudioSource.isPlaying)
+                {
+                    if (Audio.soundtrackAudioSource != null)
+                    {
+                        Audio.AdjustVolume(Audio.soundtrackAudioSource, soundtrackVolume);
+                    }
+                    if (Audio.spawnAudioSource != null)
+                    {
+                        Audio.AdjustVolume(Audio.spawnAudioSource, SpawnMusicVolume.Value);
+                    }
+                }
+                if (lerp >= 1)
+                {
+                    Audio.combatAudioSource.volume = CombatMusicVolume.Value;
+                }
             }
         }
 
@@ -397,6 +406,8 @@ namespace BobbysMusicPlayer
                 }
                 if (!combatMusicTrackList.IsNullOrEmpty())
                 {
+                    lerp = 0;
+                    Audio.combatAudioSource.Stop();
                     combatMusicClipList.Clear();
                     foreach (var track in combatMusicTrackList)
                     {
@@ -458,13 +469,15 @@ namespace BobbysMusicPlayer
             PauseTrack = Config.Bind(generalSettings, "Pause track button", new KeyboardShortcut(KeyCode.Keypad5));
             CombatAttackedEntryTime = Config.Bind<float>(dynamicSoundtrackSettings, "Combat duration when shot at (Seconds)", 12f, new ConfigDescription("The duration of the combat state when the player is shot at\nMake sure this is set less than \"Combat duration when hit (Seconds)\"", new AcceptableValueRange<float>(0f, 600f)));
             CombatDangerEntryTime = Config.Bind<float>(dynamicSoundtrackSettings, "Combat duration when a shot is fired closeby (Seconds)", 12f, new ConfigDescription("The duration of the combat state when a gun is fired within the distance set by \"Shot distance combat trigger (meters)\"", new AcceptableValueRange<float>(0f, 600f)));
+            CombatGrenadeEntryTime = Config.Bind<float>(dynamicSoundtrackSettings, "Combat duration when a grenade explodes closeby (Seconds)", 12f, new ConfigDescription("The duration of the combat state when a gun is fired within the distance set by \"Shot distance combat trigger (meters)\"", new AcceptableValueRange<float>(0f, 600f)));
             CombatHitEntryTime = Config.Bind<float>(dynamicSoundtrackSettings, "Combat duration when hit (Seconds)", 20f, new ConfigDescription("The duration of the combat state when the player is hit\nMake sure this is greater than \"Combat duration when shot at (Seconds)\"", new AcceptableValueRange<float>(0f, 600f)));
             CombatFireEntryTime = Config.Bind<float>(dynamicSoundtrackSettings, "Combat duration when firing (Seconds)", 8f, new ConfigDescription("The duration of the combat state when the player fires their gun\nIf using a door breaching mod, consider reducing this value potentially down to 0", new AcceptableValueRange<float>(0f, 600f)));
             CombatMusicVolume = Config.Bind<float>(dynamicSoundtrackSettings, "Combat music volume", 0.06f, new ConfigDescription("Volume of the music played in combat", new AcceptableValueRange<float>(0f, 1f), new ConfigurationManagerAttributes { Order = 8 }));
             CombatInFader = Config.Bind<float>(dynamicSoundtrackSettings, "Combat entry fader", 4f, new ConfigDescription("The transition time from normal soundtrack to combat music", new AcceptableValueRange<float>(0f, 30f), new ConfigurationManagerAttributes {IsAdvanced = true}));
             CombatOutFader = Config.Bind<float>(dynamicSoundtrackSettings, "Combat exit fader", 8f, new ConfigDescription("The transition time from combat music to normal soundtrack\nNote: This transition begins after the combat state ends", new AcceptableValueRange<float>(0f, 120f), new ConfigurationManagerAttributes {IsAdvanced = true}));
             ShotNearCutoff = Config.Bind<float>(dynamicSoundtrackSettings, "Shot distance combat trigger (meters)", 15f, new ConfigDescription("If an enemy fires within this distance, it will trigger a combat state", new AcceptableValueRange<float>(0f, 150f)));
-            AmbientCombatMultiplier = Config.Bind<float>(dynamicSoundtrackSettings, "Ambient Soundtrack volume combat multiplier", 0f, new ConfigDescription("Multiplier of the volume of the Ambient Soundtrack during combat\nSetting this to 1 means that your Ambient Soundtrack volume is independent of your combat state", new AcceptableValueRange<float>(0f, 2f), new ConfigurationManagerAttributes { Order = 0 }));
+            GrenadeNearCutoff = Config.Bind<float>(dynamicSoundtrackSettings, "Explosion distance combat trigger (meters)", 20f, new ConfigDescription("If a grenade explodes within this distance, it will trigger a combat state", new AcceptableValueRange<float>(0f, 150f)));
+            AmbientCombatMultiplier = Config.Bind<float>(dynamicSoundtrackSettings, "Ambient Soundtrack volume multiplier during combat", 0f, new ConfigDescription("During combat, the Ambient Soundtrack's volume will be multiplied by this value\nSetting this to 0 means your Ambient Soundtrack will be muted in combat.\nSetting this to 1 means that your Ambient Soundtrack volume is independent of your combat state.\nSpawn music volume is also affected", new AcceptableValueRange<float>(0f, 2f), new ConfigurationManagerAttributes { Order = 0 }));
             IndoorMultiplier = Config.Bind<float>(ambientSoundtrackSettings, "Ambient Soundtrack volume - Indoor multiplier", 0.75f, new ConfigDescription("When indoors, the Ambient Soundtrack volume will be multiplied by this value.\nI recommend setting this somewhere between 0 and 1, since the game is much noisier outdoors than indoors", new AcceptableValueRange<float>(0f, 2f)));
             environmentDict[EnvironmentType.Outdoor] = 1f;
 
@@ -477,6 +490,9 @@ namespace BobbysMusicPlayer
             new PlayerFiringPatch().Enable();
             new DamageTakenPatch().Enable();
             new ShotFiredNearPatch().Enable();
+            new GrenadePatch().Enable();
+            new MenuMusicMethod5Patch().Enable();
+            new StopMenuMusicPatch().Enable();
             menuMusicPatch.LoadAudioClips();
         }
 
@@ -515,11 +531,6 @@ namespace BobbysMusicPlayer
             {
                 return;
             }
-            if (CustomMusicJukebox.menuMusicCoroutine != null)
-            {
-                StaticManager.Instance.StopCoroutine(CustomMusicJukebox.menuMusicCoroutine);
-            }
-            Audio.menuMusicAudioSource.Stop();
             PlaySpawnMusic();
             SoundtrackJukebox.soundtrackCalled = true;
             SoundtrackJukebox.PlaySoundtrack();

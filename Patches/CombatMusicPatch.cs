@@ -116,13 +116,44 @@ namespace BobbysMusicPlayer.Patches
                 }
                 if (Plugin.combatTimer < Plugin.CombatDangerEntryTime.Value)
                 {
-                    Plugin.combatTimer = Plugin.CombatDangerEntryTime.Value * (distance/Plugin.ShotNearCutoff.Value);
+                    Plugin.combatTimer = Plugin.CombatDangerEntryTime.Value;
                     Plugin.LogSource.LogInfo("Player shot near. Combat Timer set to " + Plugin.combatTimer);
                 }
             }
             else
             {
                 Plugin.LogSource.LogInfo("Enemy shot fired past cutoff distance");
+            }
+            return true;
+        }
+    }
+    public class GrenadePatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(Grenade), nameof(Grenade.Explosion));
+        }
+        [PatchPrefix]
+        private static bool Prefix(Vector3 grenadePosition)
+        {
+            Player player = Singleton<GameWorld>.Instance.MainPlayer;
+            float distance = Vector3.Distance(player.Position, grenadePosition);
+            if (distance < Plugin.GrenadeNearCutoff.Value)
+            {
+                if (PlayerFiringPatch.playerFired == true)
+                {
+                    PlayerFiringPatch.playerFired = false;
+                    return true;
+                }
+                if (Plugin.combatTimer < Plugin.CombatGrenadeEntryTime.Value)
+                {
+                    Plugin.combatTimer = Plugin.CombatGrenadeEntryTime.Value;
+                    Plugin.LogSource.LogInfo("Grenade explosion near. Combat Timer set to " + Plugin.combatTimer);
+                }
+            }
+            else
+            {
+                Plugin.LogSource.LogInfo("Grenade explosion past cutoff distance");
             }
             return true;
         }

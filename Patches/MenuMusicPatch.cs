@@ -9,10 +9,11 @@ using Comfort.Common;
 using System.Linq;
 using EFT;
 using System;
+using static System.TimeZoneInfo;
 
 namespace BobbysMusicPlayer.Patches
 {
-    
+
     public class MenuMusicPatch : ModulePatch
     {
         internal static int trackCounter;
@@ -69,6 +70,7 @@ namespace BobbysMusicPlayer.Patches
             {
                 trackCounter = 0;
             }
+            Singleton<GUISounds>.Instance.method_4();
             Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
             Audio.menuMusicAudioSource.Play();
             Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
@@ -79,8 +81,41 @@ namespace BobbysMusicPlayer.Patches
                 trackCounter = 0;
             }
             return false;
-            
-            
         }
+    }
+    public class MenuMusicMethod5Patch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.method_5));
+        }
+        [PatchPrefix]
+        static bool Prefix()
+        {
+            Plugin.LogSource.LogInfo("GUISounds.method_5 called");
+            if (CustomMusicJukebox.menuMusicCoroutine == null)
+            {
+                return false;
+            }
+            StaticManager.Instance.StopCoroutine(CustomMusicJukebox.menuMusicCoroutine);
+            CustomMusicJukebox.menuMusicCoroutine = null;
+            return false;
+        }
+    }
+    public class StopMenuMusicPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.StopMenuBackgroundMusicWithDelay));
+        }
+        [PatchPrefix]
+        static bool Prefix(float transitionTime)
+        {
+            Plugin.LogSource.LogInfo("GUISounds.StopMenuBackgroundMusicWithDelay called");
+            Singleton<GUISounds>.Instance.method_5();
+            CustomMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(transitionTime, new Action(Singleton<GUISounds>.Instance.method_4));
+            return false;
+        }
+
     }
 }
