@@ -59,26 +59,40 @@ namespace BobbysMusicPlayer.Patches
         }
 
         [PatchPrefix]
-        static bool Prefix(AudioSource ___audioSource_3)
+        static bool Prefix(AudioSource ___audioSource_3, AudioClip[] ___audioClip_0, int ___int_0)
         {
+            Audio.menuMusicAudioSource = ___audioSource_3;
             if (menuTrackList.IsNullOrEmpty())
             {
-                return true;
+                int num;
+                do
+                {
+                    num = global::UnityEngine.Random.Range(0, ___audioClip_0.Length);
+                }
+                while (___int_0 == num);
+                ___int_0 = num;
+                AudioClip audioClip = ___audioClip_0[___int_0];
+                Singleton<GUISounds>.Instance.method_4();
+                ___audioSource_3.clip = audioClip;
+                ___audioSource_3.Play();
+                CustomMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(audioClip.length, new Action(Singleton<GUISounds>.Instance.method_3));
             }
-            Audio.menuMusicAudioSource = ___audioSource_3;
-            if (trackArray.Count == 1)
+            else
             {
-                trackCounter = 0;
-            }
-            Singleton<GUISounds>.Instance.method_4();
-            Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
-            Audio.menuMusicAudioSource.Play();
-            Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
-            trackCounter++;
-            CustomMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
-            if (trackCounter >= trackArray.Count)
-            {
-                trackCounter = 0;
+                if (trackArray.Count == 1)
+                {
+                    trackCounter = 0;
+                }
+                Singleton<GUISounds>.Instance.method_4();
+                Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
+                Audio.menuMusicAudioSource.Play();
+                Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
+                trackCounter++;
+                CustomMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
+                if (trackCounter >= trackArray.Count)
+                {
+                    trackCounter = 0;
+                }
             }
             return false;
         }
