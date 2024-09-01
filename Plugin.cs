@@ -15,7 +15,7 @@ using UnityEngine.Networking;
 
 namespace BobbysMusicPlayer
 {
-    public class CustomMusicJukebox : MonoBehaviour
+    public class MenuMusicJukebox : MonoBehaviour
     {
         internal static Coroutine menuMusicCoroutine;
         private static bool paused = false;
@@ -499,7 +499,7 @@ namespace BobbysMusicPlayer
         private void Update()
         {
             environmentDict[EnvironmentType.Indoor] = IndoorMultiplier.Value;
-            CustomMusicJukebox.MenuMusicControls();
+            MenuMusicJukebox.MenuMusicControls();
             SoundtrackJukebox.SoundtrackControls();
             CombatMusic();
             VolumeSetter();
