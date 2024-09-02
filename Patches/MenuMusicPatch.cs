@@ -9,7 +9,6 @@ using Comfort.Common;
 using System.Linq;
 using EFT;
 using System;
-using static System.TimeZoneInfo;
 
 namespace BobbysMusicPlayer.Patches
 {
