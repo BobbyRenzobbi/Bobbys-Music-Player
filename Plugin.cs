@@ -436,6 +436,7 @@ namespace BobbysMusicPlayer
                 {
                     lerp = 0;
                     Audio.combatAudioSource.Stop();
+                    Audio.combatAudioSource.loop = false;
                     combatMusicClipList.Clear();
                     foreach (var track in combatMusicTrackList)
                     {
@@ -549,7 +550,6 @@ namespace BobbysMusicPlayer
                 Audio.spawnAudioSource = gameObject.AddComponent<AudioSource>();
                 Audio.combatAudioSource = gameObject.AddComponent<AudioSource>();
                 LogSource.LogInfo("AudioSources added to game");
-                Audio.combatAudioSource.loop = false;
             }
             if (Singleton<GameWorld>.Instance.MainPlayer == null)
             {
