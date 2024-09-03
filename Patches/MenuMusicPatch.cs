@@ -21,14 +21,13 @@ namespace BobbysMusicPlayer.Patches
         private static List<string> trackListToPlay = new List<string>();
         private static List<string> trackNamesArray = new List<string>();
         internal static bool HasReloadedAudio = false;
-        Plugin plugin = new Plugin();
 
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.method_3));
         }
 
-        internal async void LoadAudioClips()
+        internal static async void LoadAudioClips()
         {
             float totalLength = 0;
             HasReloadedAudio = true;
@@ -46,6 +45,7 @@ namespace BobbysMusicPlayer.Patches
                 int nextRandom = Plugin.rand.Next(trackListToPlay.Count);
                 string track = trackListToPlay[nextRandom];
                 string trackPath = Path.GetFileName(track);
+                Plugin plugin = new Plugin();
                 AudioClip unityAudioClip = await plugin.AsyncRequestAudioClip(track);
                 trackArray.Add(unityAudioClip);
                 trackNamesArray.Add(trackPath);
