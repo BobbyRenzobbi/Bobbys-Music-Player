@@ -342,7 +342,6 @@ namespace BobbysMusicPlayer
                 LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
             }
             HasFinishedLoadingAudio = true;
-            totalLength = 0f;
         }
         private void CombatLerp()
         {
@@ -352,7 +351,7 @@ namespace BobbysMusicPlayer
         }
         private void CombatMusic()
         {
-            if (Audio.combatAudioSource != null && !combatMusicTrackList.IsNullOrEmpty())
+            if (!combatMusicTrackList.IsNullOrEmpty())
             {
                 if (combatTimer > 0)
                 {
@@ -434,6 +433,7 @@ namespace BobbysMusicPlayer
                 }
                 if (!combatMusicTrackList.IsNullOrEmpty())
                 {
+                    combatTimer = 0f;
                     lerp = 0;
                     Audio.combatAudioSource.Stop();
                     Audio.combatAudioSource.loop = false;
@@ -509,7 +509,7 @@ namespace BobbysMusicPlayer
             GrenadeNearCutoff = Config.Bind<float>(dynamicSoundtrackSettings, "Explosion distance combat trigger (meters)", 20f, new ConfigDescription("If a grenade explodes within this distance, it will trigger a combat state", new AcceptableValueRange<float>(0f, 150f)));
             AmbientCombatMultiplier = Config.Bind<float>(dynamicSoundtrackSettings, "Ambient Soundtrack volume multiplier during combat", 0f, new ConfigDescription("During combat, the Ambient Soundtrack's volume will be multiplied by this value\nSetting this to 0 means your Ambient Soundtrack will be muted in combat.\nSetting this to 1 means that your Ambient Soundtrack volume is independent of your combat state.\nSpawn music volume is also affected", new AcceptableValueRange<float>(0f, 2f), new ConfigurationManagerAttributes { Order = 0 }));
             IndoorMultiplier = Config.Bind<float>(generalSettings, "In-Raid Soundtrack volume - Indoor multiplier", 0.75f, new ConfigDescription("When indoors, all in-raid music volume will be multiplied by this value.\nI recommend setting this somewhere between 0 and 1, since the game is much noisier outdoors than indoors", new AcceptableValueRange<float>(0f, 2f)));
-            HeadsetMultiplier = Config.Bind<float>(generalSettings, "In-Raid Soundtrack volume - Active headset", 0.75f, new ConfigDescription("When wearing an active headset, all in-raid music volume will be multiplied by this value.\nI recommend setting this somewhere between 0 and 1, since the game is much noisier without an active headset", new AcceptableValueRange<float>(0f, 2f)));
+            HeadsetMultiplier = Config.Bind<float>(generalSettings, "In-Raid Soundtrack volume - Active headset multiplier", 0.75f, new ConfigDescription("When wearing an active headset, all in-raid music volume will be multiplied by this value.\nI recommend setting this somewhere between 0 and 1, since the game is much noisier without an active headset", new AcceptableValueRange<float>(0f, 2f)));
             environmentDict[EnvironmentType.Outdoor] = 1f;
 
             LogSource.LogInfo("plugin loaded!");
@@ -532,14 +532,13 @@ namespace BobbysMusicPlayer
             environmentDict[EnvironmentType.Indoor] = IndoorMultiplier.Value;
             MenuMusicJukebox.MenuMusicControls();
             SoundtrackJukebox.SoundtrackControls();
-            CombatMusic();
-            if (Singleton<GameWorld>.Instance == null && !MenuMusicPatch.HasReloadedAudio)
+            if (Singleton<GameWorld>.Instance == null)
             {
-                MenuMusicPatch.LoadAudioClips();
-                UISoundsPatch.LoadUIClips();
-            }
-            if (Singleton<GameWorld>.Instance == null || (Singleton<GameWorld>.Instance?.MainPlayer is HideoutPlayer))
-            {
+                if (!MenuMusicPatch.HasReloadedAudio)
+                {
+                    MenuMusicPatch.LoadAudioClips();
+                    UISoundsPatch.LoadUIClips();
+                }
                 SoundtrackJukebox.soundtrackCalled = false;
                 HasStartedLoadingAudio = false;
                 spawnTrackHasPlayed = false;
@@ -553,7 +552,7 @@ namespace BobbysMusicPlayer
                 Audio.combatAudioSource = gameObject.AddComponent<AudioSource>();
                 LogSource.LogInfo("AudioSources added to game");
             }
-            if (Singleton<GameWorld>.Instance.MainPlayer == null)
+            if (Singleton<GameWorld>.Instance.MainPlayer == null || Singleton<GameWorld>.Instance.MainPlayer.Location == "hideout")
             {
                 return;
             }
@@ -562,6 +561,7 @@ namespace BobbysMusicPlayer
             {
                 return;
             }
+            CombatMusic();
             VolumeSetter();
             PlaySpawnMusic();
             SoundtrackJukebox.soundtrackCalled = true;

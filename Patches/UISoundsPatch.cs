@@ -53,13 +53,11 @@ namespace BobbysMusicPlayer.Patches
         {
             if (!UISoundDictionary.ContainsKey(soundType))
             {
-                Plugin.LogSource.LogInfo("UISoundDictionary does not contain key 'soundType'");
                 return true;
             }
             var audioClipArray = uiSoundsClips[UISoundDictionary[soundType]];
             if (audioClipArray.IsNullOrEmpty())
             {
-                Plugin.LogSource.LogInfo("audioClipArray is null or empty");
                 return true;
             }
             __result = audioClipArray[Plugin.rand.Next(audioClipArray.Count)];
