@@ -545,7 +545,7 @@ namespace BobbysMusicPlayer
                 return;
             }
             MenuMusicPatch.HasReloadedAudio = false;
-            if (Audio.soundtrackAudioSource == null || Audio.spawnAudioSource == null || Audio.combatAudioSource == null)
+            if (Audio.soundtrackAudioSource == null)
             {
                 Audio.soundtrackAudioSource = gameObject.AddComponent<AudioSource>();
                 Audio.spawnAudioSource = gameObject.AddComponent<AudioSource>();
