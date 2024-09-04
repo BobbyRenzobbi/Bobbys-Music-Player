@@ -176,7 +176,7 @@ namespace BobbysMusicPlayer
             audiosource.volume = volume;
         }
     }
-    [BepInPlugin("BobbyRenzobbi.MusicPlayer", "BobbysMusicPlayer", "1.2.2")]
+    [BepInPlugin("BobbyRenzobbi.MusicPlayer", "BobbysMusicPlayer", "1.2.3")]
     public class Plugin : BaseUnityPlugin
     {
         public enum ESoundtrackPlaylist
@@ -477,10 +477,10 @@ namespace BobbysMusicPlayer
             RaidEndMusicPatch.deathMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\DeathMusic"));
             RaidEndMusicPatch.extractMusicList.AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\ExtractMusic"));
             int counter = 0;
-            foreach (var dir in UISoundsPatch.questSoundsDir)
+            foreach (var dir in UISoundsPatch.uiSoundsDir)
             {
-                UISoundsPatch.questSounds.Add(new List<string>());
-                UISoundsPatch.questSounds[counter].AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir));
+                UISoundsPatch.uiSounds[counter] = new List<string>();
+                UISoundsPatch.uiSounds[counter].AddRange(Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory + "\\BepInEx\\plugins\\BobbysMusicPlayer\\UISounds\\" + dir));
                 counter++;
             }
 
@@ -524,6 +524,7 @@ namespace BobbysMusicPlayer
             new MenuMusicMethod5Patch().Enable();
             new StopMenuMusicPatch().Enable();
             MenuMusicPatch.LoadAudioClips();
+            UISoundsPatch.LoadUIClips();
         }
 
         private void Update()
@@ -535,6 +536,7 @@ namespace BobbysMusicPlayer
             if (Singleton<GameWorld>.Instance == null && !MenuMusicPatch.HasReloadedAudio)
             {
                 MenuMusicPatch.LoadAudioClips();
+                UISoundsPatch.LoadUIClips();
             }
             if (Singleton<GameWorld>.Instance == null || (Singleton<GameWorld>.Instance?.MainPlayer is HideoutPlayer))
             {
