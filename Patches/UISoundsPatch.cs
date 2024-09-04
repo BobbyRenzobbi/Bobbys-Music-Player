@@ -10,13 +10,13 @@ namespace BobbysMusicPlayer.Patches
 {
     public class UISoundsPatch : ModulePatch
     {
-        internal static List<List<string>> questSounds = new List<List<string>>();
-        internal static string[] questSoundsDir = new string[8]
+        internal static List<string>[] uiSounds = new List<string>[8];
+        internal static string[] uiSoundsDir = new string[8]
         {
             "QuestCompleted", "QuestFailed", "QuestFinished", "QuestStarted", "QuestSubtaskComplete", "DeathSting", "ErrorSound", "TradeSound"
         };
         private static AudioClip replacementClip;
-        Plugin plugin = new Plugin();
+        private static Plugin plugin = new Plugin();
         private static Dictionary<EUISoundType, int> UISoundDictionary = new Dictionary<EUISoundType, int>
         {
             [EUISoundType.QuestCompleted] = 0,
@@ -28,42 +28,42 @@ namespace BobbysMusicPlayer.Patches
             [EUISoundType.ErrorMessage] = 6,
             [EUISoundType.TradeOperationComplete] = 7
         };
-
+        internal static List<AudioClip>[] uiSoundsClips = new List<AudioClip>[8];
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(UISoundsWrapper), nameof(UISoundsWrapper.GetUIClip));
         }
 
-        private void LoadNextTrack(EUISoundType soundType)
+        internal static async void LoadUIClips()
         {
-            string replacementTrack;
-            if (UISoundDictionary.ContainsKey(soundType) && !questSounds[UISoundDictionary[soundType]].IsNullOrEmpty())
+            int counter = 0;
+            foreach (List<string> list in uiSounds)
             {
-                replacementTrack = questSounds[UISoundDictionary[soundType]][Plugin.rand.Next(questSounds[UISoundDictionary[soundType]].Count)];
+                uiSoundsClips[counter] = new List<AudioClip>();
+                foreach (string track in list)
+                {
+                    uiSoundsClips[counter].Add(await plugin.AsyncRequestAudioClip(track));
+                    Plugin.LogSource.LogInfo(Path.GetFileName(track) + " assigned to " + uiSoundsDir[counter]);
+                }
+                counter++;
             }
-            else
-            {
-                return;
-            }
-            replacementClip = plugin.RequestAudioClip(replacementTrack);
-            string trackPath = Path.GetFileName(replacementTrack);
-            Plugin.LogSource.LogInfo(trackPath + " assigned to " + soundType);
         }
-
         [PatchPrefix]
         static bool Prefix(ref AudioClip __result, EUISoundType soundType)
         {
-            replacementClip = null;
-            Plugin.LogSource.LogInfo("UISoundsPatch.Prefix called");
-            UISoundsPatch patch = new UISoundsPatch();
-            patch.LoadNextTrack(soundType);
-            Plugin.LogSource.LogInfo("UISoundsPatch.LoadNextTrack called");
-            if (replacementClip != null)
+            if (!UISoundDictionary.ContainsKey(soundType))
             {
-                __result = replacementClip;
-                return false;
+                Plugin.LogSource.LogInfo("UISoundDictionary does not contain key 'soundType'");
+                return true;
             }
-            return true;
+            var audioClipArray = uiSoundsClips[UISoundDictionary[soundType]];
+            if (audioClipArray.IsNullOrEmpty())
+            {
+                Plugin.LogSource.LogInfo("audioClipArray is null or empty");
+                return true;
+            }
+            __result = audioClipArray[Plugin.rand.Next(audioClipArray.Count)];
+            return false;
         }
     }
 }
