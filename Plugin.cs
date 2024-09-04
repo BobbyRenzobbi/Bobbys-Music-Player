@@ -176,7 +176,7 @@ namespace BobbysMusicPlayer
             audiosource.volume = volume;
         }
     }
-    [BepInPlugin("BobbyRenzobbi.MusicPlayer", "BobbysMusicPlayer", "1.2.3")]
+    [BepInPlugin("BobbyRenzobbi.MusicPlayer", "BobbysMusicPlayer", "1.2.2")]
     public class Plugin : BaseUnityPlugin
     {
         public enum ESoundtrackPlaylist
