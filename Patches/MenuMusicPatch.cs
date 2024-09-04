@@ -53,7 +53,6 @@ namespace BobbysMusicPlayer.Patches
                 totalLength += trackArray.Last().length;
                 Plugin.LogSource.LogInfo(trackPath + " has been loaded and added to playlist");
             } while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()));
-            Plugin.LogSource.LogInfo("trackArray stored in storeTrackArray");
         }
 
         [PatchPrefix]
