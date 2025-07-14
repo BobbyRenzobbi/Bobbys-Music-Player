@@ -31,6 +31,7 @@ namespace BobbysMusicPlayer.Patches
             }
         }
     }
+    
     public class PlayerFiringPatch : ModulePatch
     {
         internal static bool playerFired = false;
@@ -60,6 +61,7 @@ namespace BobbysMusicPlayer.Patches
             return true;
         }
     }
+    
     public class DamageTakenPatch : ModulePatch
     {
         private static List<string> damageTypeList = new List<string>()
@@ -93,6 +95,7 @@ namespace BobbysMusicPlayer.Patches
             return true;
         }
     }
+    
     public class ShotFiredNearPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
@@ -103,7 +106,7 @@ namespace BobbysMusicPlayer.Patches
         private static bool Prefix(Vector3 shotPosition)
         {
             Player player = Singleton<GameWorld>.Instance.MainPlayer;
-            float distance = Vector3.Distance(player.Position, shotPosition);
+            float distance = Vector3.Distance(player.PlayerBones.BodyTransform.position, shotPosition);
             if (distance < Plugin.ShotNearCutoff.Value)
             {
                 if (PlayerFiringPatch.playerFired == true)
@@ -124,6 +127,7 @@ namespace BobbysMusicPlayer.Patches
             return true;
         }
     }
+    
     public class GrenadePatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
@@ -134,7 +138,7 @@ namespace BobbysMusicPlayer.Patches
         private static bool Prefix(Vector3 grenadePosition)
         {
             Player player = Singleton<GameWorld>.Instance.MainPlayer;
-            float distance = Vector3.Distance(player.Position, grenadePosition);
+            float distance = Vector3.Distance(player.PlayerBones.BodyTransform.position, grenadePosition);
             if (distance < Plugin.GrenadeNearCutoff.Value)
             {
                 if (PlayerFiringPatch.playerFired == true)

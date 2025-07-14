@@ -59,69 +59,84 @@ namespace BobbysMusicPlayer.Patches
         static bool Prefix(AudioSource ___audioSource_3, AudioClip[] ___audioClip_0)
         {
             Audio.menuMusicAudioSource = ___audioSource_3;
-            if (menuTrackList.IsNullOrEmpty())
+            try
             {
-                if (trackArray.IsNullOrEmpty())
+                if (menuTrackList.IsNullOrEmpty())
                 {
-                    // If the player is not replacing Main Menu music, they will get to enjoy a properly shuffled default playlist.
-                    // All BSG does is pick a random track and make sure it's not the same one that just played.
-                    // More importantly, adding each element of BSG's AudioClip array to our trackArray means that players can
-                    // use "Jukebox" controls on the default menu music.
-                    int[] randomArray = new int[___audioClip_0.Length];
-                    Plugin.LogSource.LogInfo("Starting 'for loop'");
-                    for (int i = 0; i < ___audioClip_0.Length - 1; i++)
+                    if (trackArray.IsNullOrEmpty())
                     {
-                        Plugin.LogSource.LogInfo("for loop iteration " + i);
-                        int randomInt;
-                        do
+                        // If the player is not replacing Main Menu music, they will get to enjoy a properly shuffled default playlist.
+                        // All BSG does is pick a random track and make sure it's not the same one that just played.
+                        // More importantly, adding each element of BSG's AudioClip array to our trackArray means that players can
+                        // use "Jukebox" controls on the default menu music.
+                        
+                        int[] randomArray = new int[___audioClip_0.Length];
+                        Plugin.LogSource.LogInfo("Starting 'for loop'");
+                        for (int i = 0; i < ___audioClip_0.Length - 1; i++)
                         {
-                            Plugin.LogSource.LogInfo("choosing randomInt");
-                            randomInt = Plugin.rand.Next(___audioClip_0.Length);
-                        } while (randomArray.Contains(randomInt));
-                        randomArray[i] = randomInt;
-                        trackArray.Add(___audioClip_0[randomInt]);
+                            Plugin.LogSource.LogInfo("for loop iteration " + i);
+                            int randomInt;
+                            do
+                            {
+                                Plugin.LogSource.LogInfo("choosing randomInt");
+                                randomInt = Plugin.rand.Next(___audioClip_0.Length);
+                            } while (randomArray.Contains(randomInt));
+
+                            randomArray[i] = randomInt;
+                            trackArray.Add(___audioClip_0[randomInt]);
+                        }
+                    }
+
+                    Singleton<GUISounds>.Instance.method_7();
+                    Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
+                    Audio.menuMusicAudioSource.Play();
+                    trackCounter++;
+                    MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(
+                        Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
+                    if (trackCounter >= trackArray.Count)
+                    {
+                        trackCounter = 0;
                     }
                 }
-                Singleton<GUISounds>.Instance.method_4();
-                Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
-                Audio.menuMusicAudioSource.Play();
-                trackCounter++;
-                MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
-                if (trackCounter >= trackArray.Count)
+                else
                 {
-                    trackCounter = 0;
+                    if (trackArray.Count == 1)
+                    {
+                        trackCounter = 0;
+                    }
+
+                    Singleton<GUISounds>.Instance.method_7();
+                    Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
+                    Audio.menuMusicAudioSource.Play();
+                    Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
+                    trackCounter++;
+                    MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(
+                        Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
+                    if (trackCounter >= trackArray.Count)
+                    {
+                        trackCounter = 0;
+                    }
                 }
+
+                return false;
             }
-            else
+            catch (Exception e)
             {
-                if (trackArray.Count == 1)
-                {
-                    trackCounter = 0;
-                }
-                Singleton<GUISounds>.Instance.method_4();
-                Audio.menuMusicAudioSource.clip = trackArray[trackCounter];
-                Audio.menuMusicAudioSource.Play();
-                Plugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
-                trackCounter++;
-                MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(Audio.menuMusicAudioSource.clip.length, new Action(Singleton<GUISounds>.Instance.method_3));
-                if (trackCounter >= trackArray.Count)
-                {
-                    trackCounter = 0;
-                }
+                Logger.LogError("Error while loading music "+e.ToString());
+                return false;
             }
-            return false;
         }
     }
-    public class MenuMusicMethod5Patch : ModulePatch
+    public class MenuMusicMethod8Patch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.method_5));
+            return AccessTools.Method(typeof(GUISounds), nameof(GUISounds.method_8));
         }
         [PatchPrefix]
         static bool Prefix()
         {
-            Plugin.LogSource.LogInfo("GUISounds.method_5 called");
+            Plugin.LogSource.LogInfo("GUISounds.method_8 called");
             if (MenuMusicJukebox.menuMusicCoroutine == null)
             {
                 return false;
@@ -141,8 +156,8 @@ namespace BobbysMusicPlayer.Patches
         static bool Prefix(float transitionTime)
         {
             Plugin.LogSource.LogInfo("GUISounds.StopMenuBackgroundMusicWithDelay called");
-            Singleton<GUISounds>.Instance.method_5();
-            MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(transitionTime, new Action(Singleton<GUISounds>.Instance.method_4));
+            Singleton<GUISounds>.Instance.method_8();
+            MenuMusicJukebox.menuMusicCoroutine = StaticManager.Instance.WaitSeconds(transitionTime, new Action(Singleton<GUISounds>.Instance.method_7));
             return false;
         }
 
