@@ -22,10 +22,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PostBuildEvent>
-      copy /Y "F:\GitHub\Tarkov\SPT_BobbysMusicPlayer\bin\Debug\BobbysMusicPlayer.dll" "F:\Games\SPT-Dev\BepInEx\plugins\BobbysMusicPlayer\BobbysMusicPlayer.dll
-      copy /Y "F:\GitHub\Tarkov\SPT_BobbysMusicPlayer\bin\Debug\BobbysMusicPlayer.dll" "F:\Games\SPT\BepInEx\plugins\BobbysMusicPlayer\BobbysMusicPlayer.dll
-    </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -34,10 +30,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PostBuildEvent>
-      copy /Y "F:\GitHub\Tarkov\SPT_BobbysMusicPlayer\bin\Debug\BobbysMusicPlayer.dll" "F:\Games\SPT-Dev\BepInEx\plugins\BobbysMusicPlayer\BobbysMusicPlayer.dll
-      copy /Y "F:\GitHub\Tarkov\SPT_BobbysMusicPlayer\bin\Debug\BobbysMusicPlayer.dll" "F:\Games\SPT\BepInEx\plugins\BobbysMusicPlayer\BobbysMusicPlayer.dll
-    </PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data\GlobalData.cs" />
