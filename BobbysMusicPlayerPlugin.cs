@@ -67,10 +67,13 @@ namespace BobbysMusicPlayer
 
         private void Update()
         {
+#if DEBUG
+            // Debug keybind for testing spawn music
             if (_settings.KeyBind.Value.IsDown())
             {
                 _audio.PlaySpawnMusic(false);
             }
+#endif
             
             _menuMusicJukebox.CheckMenuMusicControls();
             
