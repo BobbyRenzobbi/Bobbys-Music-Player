@@ -50,44 +50,43 @@ namespace BobbysMusicPlayer.Utils
         
         public void UpdateOverlay()
         {
-            if (_overlayText == null) return;
+            if (!_overlayText) return;
 
-            var _audio = BobbysMusicPlayerPlugin.Instance.GetAudio();
+            var audio = BobbysMusicPlayerPlugin.Instance.GetAudio();
             
-            _overlayText.text = $"InRaid -> {BobbysMusicPlayerPlugin.InRaid}\n" +
+            if (audio == null) return;
+            
+            _overlayText.text = $"Combat Timer -> {audio.CombatTimer}" + 
                                 $"\n" +
-                                $"Combat Timer -> {_audio.CombatTimer}" + 
+                                $"Headset Multiplier -> {audio.HeadsetMultiplier}" + 
                                 $"\n" +
-                                $"headsetMultiplier -> {_audio.HeadsetMultiplier}" + 
-                                $"\n" +
-                                $"Current Env Multiplier -> {_audio.CurrentEnvironmentMultiplier}" + 
+                                $"Current Env.Multiplier -> {audio.CurrentEnvironmentMultiplier}" + 
                                 $"\n" +
                                 $"[CombatLerp Volume Data]\n" +
-                                $"CombatAudioSource Volume -> {Mathf.Lerp(0f, _audio.CombatMusicVolume, _audio.Lerp)}\n" +
-                                $"SoundtrackAudioSource Volume -> {Mathf.Lerp(_audio.SoundtrackVolume, SettingsModel.Instance.AmbientCombatMultiplier.Value*_audio.SoundtrackVolume, _audio.Lerp)}\n" +
-                                $"SpawnAudioSource Volume -> {Mathf.Lerp(_audio.SpawnMusicVolume, SettingsModel.Instance.AmbientCombatMultiplier.Value*_audio.SpawnMusicVolume, _audio.Lerp)}\n" +
+                                $"   CombatAudioSource Volume -> {Mathf.Lerp(0f, audio.CombatMusicVolume, audio.Lerp)}\n" +
+                                $"   SoundtrackAudioSource Volume -> {Mathf.Lerp(audio.SoundtrackVolume, SettingsModel.Instance.AmbientCombatMultiplier.Value * audio.SoundtrackVolume, audio.Lerp)}\n" +
+                                $"   SpawnAudioSource Volume -> {Mathf.Lerp(audio.SpawnMusicVolume, SettingsModel.Instance.AmbientCombatMultiplier.Value * audio.SpawnMusicVolume, audio.Lerp)}\n" +
                                 $"\n" +
                                 $"[VolumeSetter Volume Data]\n" +
-                                $"CombatAudioSource Volume -> {_audio.CombatMusicVolume}\n" +
-                                $"SoundtrackAudioSource Volume -> {_audio.SoundtrackVolume}\n" +
-                                $"SpawnAudioSource Volume -> {_audio.SpawnMusicVolume}\n" +
+                                $"   CombatAudioSource Volume -> {audio.CombatMusicVolume}\n" +
+                                $"   SoundtrackAudioSource Volume -> {audio.SoundtrackVolume}\n" +
+                                $"   SpawnAudioSource Volume -> {audio.SpawnMusicVolume}\n" +
                                 $"\n" +
                                 $"[AudioSource is playing?]\n" +
-                                $"CombatAudioSource isPlay? -> {_audio.CombatAudioSource?.isPlaying}\n" +
-                                $"SoundtrackAudioSource isPlay? -> {_audio.SoundtrackAudioSource?.isPlaying}\n" +
-                                $"SpawnAudioSource isPlay? -> {_audio.SpawnAudioSource?.isPlaying}\n";
-                                
+                                $"   CombatAudioSource isPlay? -> {audio.CombatAudioSource?.isPlaying}\n" +
+                                $"   SoundtrackAudioSource isPlay? -> {audio.SoundtrackAudioSource?.isPlaying}\n" +
+                                $"   SpawnAudioSource isPlay? -> {audio.SpawnAudioSource?.isPlaying}\n";
         }
 
         public void SetOverlayPosition(Vector2 anchoredPosition)
         {
-            if (_overlayText != null)
+            if (_overlayText)
                 _overlayText.rectTransform.anchoredPosition = anchoredPosition;
         }
         
         public void SetFontSize(int size)
         {
-            if (_overlayText != null)
+            if (_overlayText)
                 _overlayText.fontSize = size;
         }
 

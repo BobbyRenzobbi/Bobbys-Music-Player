@@ -58,7 +58,6 @@
     <Compile Include="Utils\AudioManager.cs" />
     <Compile Include="Utils\ESoundtrackPlaylist.cs" />
     <Compile Include="Utils\OverlayDebug.cs" />
-    <Compile Include="Utils\SmoothValue.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">

@@ -16,9 +16,9 @@ namespace BobbysMusicPlayer
         public static BobbysMusicPlayerPlugin Instance { get; private set; }
         
         private SettingsModel _settings;
-        private AudioManager audio;
-        private MenuMusicJukebox menuMusicJukebox;
-        private SoundtrackJukebox soundtrackJukebox;
+        private AudioManager _audio;
+        private MenuMusicJukebox _menuMusicJukebox;
+        private SoundtrackJukebox _soundtrackJukebox;
         
         internal static ManualLogSource LogSource;
         
@@ -30,21 +30,21 @@ namespace BobbysMusicPlayer
             LogSource = Logger;
             LogSource.LogInfo("Plugin loading...");
             
-            //Init config
+            // Init config
             _settings = SettingsModel.Create(Config);
             
             GlobalData.EnvironmentDict[EnvironmentType.Indoor] = _settings.IndoorMultiplier.Value;
             
-            //Initialization audio side
-            audio = new AudioManager();
-            audio.Init(gameObject);
+            // Initialization audio side
+            _audio = new AudioManager();
+            _audio.Init(gameObject);
 
-            soundtrackJukebox = new SoundtrackJukebox();
-            soundtrackJukebox.Init(audio);
+            // Init audio controls
+            _soundtrackJukebox = new SoundtrackJukebox();
+            _soundtrackJukebox.Init(_audio);
 
-            menuMusicJukebox = new MenuMusicJukebox();
-            menuMusicJukebox.Init(audio, soundtrackJukebox);
-            
+            _menuMusicJukebox = new MenuMusicJukebox();
+            _menuMusicJukebox.Init(_audio, _soundtrackJukebox);
             
             new MenuMusicPatch().Enable();
             new RaidEndMusicPatch().Enable();
@@ -58,6 +58,7 @@ namespace BobbysMusicPlayer
             new StopMenuMusicPatch().Enable();
             new OnGameWorldStartPatch().Enable();
             new OnGameWorldDisposePatch().Enable();
+            
             MenuMusicPatch.LoadAudioClips();
             UISoundsPatch.LoadUIClips();
             
@@ -68,10 +69,10 @@ namespace BobbysMusicPlayer
         {
             if (_settings.KeyBind.Value.IsDown())
             {
-                audio.PlaySpawnMusic(false);
+                _audio.PlaySpawnMusic(false);
             }
             
-            menuMusicJukebox.CheckMenuMusicControls();
+            _menuMusicJukebox.CheckMenuMusicControls();
             
             if (!InRaid)
             {
@@ -80,9 +81,9 @@ namespace BobbysMusicPlayer
                     MenuMusicPatch.LoadAudioClips();
                     UISoundsPatch.LoadUIClips();
                 }
-                soundtrackJukebox.SoundtrackCalled = false;
-                audio.HasStartedLoadingAudio = false;
-                audio.SpawnTrackHasPlayed = false;
+                _soundtrackJukebox.SoundtrackCalled = false;
+                _audio.HasStartedLoadingAudio = false;
+                _audio.SpawnTrackHasPlayed = false;
                 return;
             }
             
@@ -93,21 +94,21 @@ namespace BobbysMusicPlayer
             
             MenuMusicPatch.HasReloadedAudio = false;
             
-            audio.PrepareRaidAudioClips();
+            _audio.PrepareRaidAudioClips();
 #if DEBUG
             OverlayDebug.Instance.UpdateOverlay();
 #endif
             
-            audio.PlaySpawnMusic();
-            audio.VolumeSetter();
-            audio.CombatMusic();
+            _audio.PlaySpawnMusic();
+            _audio.VolumeSetter();
+            _audio.CombatMusic();
             
-            soundtrackJukebox.CheckSoundtrackControls();
-            soundtrackJukebox.SoundtrackCalled = true;
-            soundtrackJukebox.PlaySoundtrack();
+            _soundtrackJukebox.CheckSoundtrackControls();
+            _soundtrackJukebox.SoundtrackCalled = true;
+            _soundtrackJukebox.PlaySoundtrack();
         }
 
-        public AudioManager GetAudio() => audio;
-        public MenuMusicJukebox GetMenuMusicJukeBox() => menuMusicJukebox;
+        public AudioManager GetAudio() => _audio;
+        public MenuMusicJukebox GetMenuMusicJukeBox() => _menuMusicJukebox;
     }
 }

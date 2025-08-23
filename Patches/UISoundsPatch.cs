@@ -46,10 +46,10 @@ namespace BobbysMusicPlayer.Patches
         internal static async void LoadUIClips()
         {
             int counter = 0;
-            foreach (List<string> list in UISounds)
+            foreach (var list in UISounds)
             {
                 UISoundsClips[counter] = new List<AudioClip>();
-                foreach (string track in list)
+                foreach (var track in list)
                 {
                     UISoundsClips[counter].Add(await AudioManager.AsyncRequestAudioClip(track));
                     BobbysMusicPlayerPlugin.LogSource.LogInfo(Path.GetFileName(track) + " assigned to " + GlobalData.UISoundsDir[counter]);

@@ -133,13 +133,16 @@ namespace BobbysMusicPlayer.Patches
                 int nextRandom = Range(0, trackListToPlay.Count);
                 string track = trackListToPlay[nextRandom];
                 string trackName = Path.GetFileName(track);
+                
                 AudioClip unityAudioClip = await AudioManager.AsyncRequestAudioClip(track);
+                
                 trackArray.Add(unityAudioClip);
                 trackNamesArray.Add(trackName);
                 trackListToPlay.Remove(track);
                 totalLength += trackArray.Last().length;
+                
                 BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
-            } while ((totalLength < targetLength) && (!trackListToPlay.IsNullOrEmpty()));
+            } while (totalLength < targetLength && !trackListToPlay.IsNullOrEmpty());
         }
     }
     

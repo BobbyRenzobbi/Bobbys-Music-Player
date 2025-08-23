@@ -81,11 +81,11 @@ namespace BobbysMusicPlayer.Utils
         {
             // Next two lines are taken from Fontaine's Realism Mod. Credit to him
             CompoundItem headwear = Singleton<GameWorld>.Instance.MainPlayer.Equipment.GetSlot(EquipmentSlot.Headwear).ContainedItem as CompoundItem;
-            HeadphonesItemClass headset = Singleton<GameWorld>.Instance.MainPlayer.Equipment.GetSlot(EquipmentSlot.Earpiece).ContainedItem as HeadphonesItemClass ?? ((headwear != null) ? headwear.GetAllItemsFromCollection().OfType<HeadphonesItemClass>().FirstOrDefault<HeadphonesItemClass>() : null);
+            HeadphonesItemClass headset = Singleton<GameWorld>.Instance.MainPlayer.Equipment.GetSlot(EquipmentSlot.Earpiece).ContainedItem as HeadphonesItemClass ?? headwear?.GetAllItemsFromCollection().OfType<HeadphonesItemClass>().FirstOrDefault();
             
             _targetHeadsetMultiplier = headset != null ? SettingsModel.Instance.HeadsetMultiplier.Value : 1f;
             
-            //Fix sharp switching by headset volume
+            // Fix sharp switching by headset volume
             HeadsetMultiplier = HeadsetMultiplier.SmoothTowards(_targetHeadsetMultiplier,
                 Time.deltaTime, SettingsModel.Instance.TransitionHeadsetSpeed.Value);
             
@@ -94,7 +94,7 @@ namespace BobbysMusicPlayer.Utils
             _lastEnvironment = currentEnvironment;
             _targetEnvironmentMultiplier = GlobalData.EnvironmentDict[currentEnvironment];
             
-            //Fix sharp switching of Environment
+            // Fix sharp switching of Environment
             CurrentEnvironmentMultiplier = CurrentEnvironmentMultiplier.SmoothTowards(_targetEnvironmentMultiplier,
                 Time.deltaTime, SettingsModel.Instance.TransitionEnvSpeed.Value);
             
@@ -127,6 +127,7 @@ namespace BobbysMusicPlayer.Utils
                     if (!CombatAudioSource.isPlaying && CombatAudioSource.loop == false)
                     {
                         CombatAudioSource.loop = true;
+                        BobbysMusicPlayerPlugin.LogSource.LogInfo("Combat music started");
                         CombatAudioSource.Play();
                     }
                     if (Lerp <= 1)
@@ -295,12 +296,16 @@ namespace BobbysMusicPlayer.Utils
         private async void LoadAmbientSoundtrackClips()
         {
             float totalLength = 0f;
+            float targetLength = 60f * SettingsModel.Instance.SoundtrackLength.Value;
+            
             HasFinishedLoadingAudio = false;
+            
             AmbientTrackArray.Clear();
             AmbientTrackNamesArray.Clear();
             _ambientTrackListToPlay.Clear();
-            float targetLength = 60f * SettingsModel.Instance.SoundtrackLength.Value;
+            
             BobbysMusicPlayerPlugin.LogSource.LogInfo("Map is " + Singleton<GameWorld>.Instance.MainPlayer.Location + ".");
+            
             if (GlobalData.MapDictionary[Singleton<GameWorld>.Instance.MainPlayer.Location].IsNullOrEmpty() || SettingsModel.Instance.SoundtrackPlaylist.Value == ESoundtrackPlaylist.DefaultPlaylistOnly)
             {
                 _ambientTrackListToPlay.AddRange(_defaultTrackList);
@@ -338,23 +343,27 @@ namespace BobbysMusicPlayer.Utils
         /// <returns></returns>
         internal static async Task<AudioClip> AsyncRequestAudioClip(string path)
         {
-            string extension = Path.GetExtension(path);
-            
-            UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension.ToLower()]);
-            UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
+            string extension = Path.GetExtension(path).ToLowerInvariant();
 
-            while (!sendWeb.isDone)
-                await Task.Yield();
-            
-            if (uwr.isNetworkError || uwr.isHttpError)
+            using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension]))
             {
-                BobbysMusicPlayerPlugin.LogSource.LogError($"Soundtrack: Failed To Fetch Audio Clip by path -> '{path}'");
-                return null;
-            }
+                var operation = uwr.SendWebRequest();
 
-            AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
-            return audioclip;
+                while (!operation.isDone)
+                    await Task.Yield();
+
+                if (uwr.result != UnityWebRequest.Result.Success)
+                {
+                    BobbysMusicPlayerPlugin.LogSource.LogError(
+                        $"Soundtrack: Failed to fetch audio clip -> '{path}', Error: {uwr.error}"
+                    );
+                    return null;
+                }
+
+                return DownloadHandlerAudioClip.GetContent(uwr);
+            }
         }
+
         
         /// <summary>
         /// Sync load audio file as AudioClip
@@ -363,20 +372,27 @@ namespace BobbysMusicPlayer.Utils
         /// <returns></returns>
         internal static AudioClip RequestAudioClip(string path)
         {
-            string extension = Path.GetExtension(path);
-            
-            UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension.ToLower()]);
-            UnityWebRequestAsyncOperation sendWeb = uwr.SendWebRequest();
+            string extension = Path.GetExtension(path).ToLowerInvariant();
 
-            while (!sendWeb.isDone)
-                if (uwr.isNetworkError || uwr.isHttpError)
+            using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension]))
+            {
+                var operation = uwr.SendWebRequest();
+
+                // Can do big freeze main thread if file big
+                while (!operation.isDone) {}
+
+                if (uwr.result != UnityWebRequest.Result.Success)
                 {
-                    BobbysMusicPlayerPlugin.LogSource.LogError("Soundtrack: Failed To Fetch Audio Clip");
+                    BobbysMusicPlayerPlugin.LogSource.LogError(
+                        $"Soundtrack: Failed to fetch audio clip -> '{path}', Error: {uwr.error}"
+                    );
                     return null;
                 }
-            AudioClip audioclip = DownloadHandlerAudioClip.GetContent(uwr);
-            return audioclip;
+
+                return DownloadHandlerAudioClip.GetContent(uwr);
+            }
         }
+
 
         #endregion
     }
