@@ -48,10 +48,12 @@ namespace BobbysMusicPlayer.Patches
         private static void LoadNextTrack(EEndGameSoundType soundType)
         {
             string raidEndTrack = raidEndDictionary[soundType][Range(0, raidEndDictionary[soundType].Count)];
-            raidEndClip = AudioManager.RequestAudioClip(raidEndTrack);
+            
+            //I'm sure the track will be in the cache.
+            raidEndClip = BobbysMusicPlayerPlugin.Instance.GetCache().GetCacheAudioClip(raidEndTrack);
             
             string trackName = Path.GetFileName(raidEndTrack);
-            BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " assigned to " + soundType);
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[END RAID] " + trackName + " loaded for type: " + soundType);
         }
     }
 }

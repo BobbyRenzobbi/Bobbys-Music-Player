@@ -13,17 +13,17 @@ namespace BobbysMusicPlayer.Utils
     /// <summary>
     /// Centralized audio caching system to avoid reloading the same audio files
     /// </summary>
-    public static class AudioCache
+    public class AudioCache
     {
-        private static readonly Dictionary<string, AudioClip> _audioClipCache = new();
-        private static readonly Dictionary<string, List<AudioClip>> _playlistCache = new();
-        private static bool _isInitialized = false;
-        private static CancellationTokenSource _initializationCancellationTokenSource;
+        private readonly Dictionary<string, AudioClipData> _audioClipCache = new();
+        private readonly Dictionary<string, List<AudioClip>> _playlistCache = new();
+        private bool _isInitialized = false;
+        private CancellationTokenSource _initializationCancellationTokenSource;
         
         /// <summary>
         /// Initialize the audio cache with all available music files
         /// </summary>
-        public static async Task InitializeAsync()
+        public async Task InitializeAsync()
         {
             if (_isInitialized) return;
             
@@ -68,9 +68,9 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Cache files with limited concurrency to prevent hanging
         /// </summary>
-        private static async Task CacheFilesWithLimitedConcurrency(List<string> filePaths, CancellationToken cancellationToken)
+        private async Task CacheFilesWithLimitedConcurrency(List<string> filePaths, CancellationToken cancellationToken)
         {
-            const int maxConcurrentTasks = 3; // Limit concurrent downloads
+            const int maxConcurrentTasks = 3;
             var semaphore = new SemaphoreSlim(maxConcurrentTasks);
             var tasks = new List<Task>();
             var completedCount = 0;
@@ -114,7 +114,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Collect all music file paths from various directories
         /// </summary>
-        private static void CollectMusicFiles(List<string> allMusicFiles)
+        private void CollectMusicFiles(List<string> allMusicFiles)
         {
             // Menu music
             if (Directory.Exists(PathData.CustomMenuMusicSounds))
@@ -159,7 +159,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Cache a single audio file
         /// </summary>
-        private static async Task CacheAudioFileAsync(string filePath)
+        private async Task CacheAudioFileAsync(string filePath)
         {
             if (_audioClipCache.ContainsKey(filePath)) return;
             
@@ -169,10 +169,11 @@ namespace BobbysMusicPlayer.Utils
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // 30 second timeout
                 
                 var audioClip = await AsyncRequestAudioClip(filePath, cts.Token);
+
                 if (audioClip != null)
                 {
-                    _audioClipCache[filePath] = audioClip;
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Cached: {Path.GetFileName(filePath)}");
+                    _audioClipCache[filePath] = new AudioClipData(audioClip);
+                    BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Cached: {Path.GetFileName(filePath)}. Length: {audioClip.length}");
                 }
             }
             catch (OperationCanceledException)
@@ -188,26 +189,41 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Get AudioClip from cache or load it if not cached
         /// </summary>
-        public static async Task<AudioClip> GetOrCacheAudioClip(string filePath)
+        public async Task<AudioClip> GetOrCacheAudioClip(string filePath)
         {
             if (_audioClipCache.ContainsKey(filePath))
             {
-                return _audioClipCache[filePath];
+                BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] GET {filePath}");
+                return _audioClipCache[filePath].Get();
             }
             
             // If not in cache, load and cache it
             var audioClip = await AsyncRequestAudioClip(filePath);
+
             if (audioClip != null)
             {
-                _audioClipCache[filePath] = audioClip;
+                _audioClipCache[filePath] = new AudioClipData(audioClip);
             }
+            
+            BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] REQUEST {filePath}");
             return audioClip;
+        }
+        
+        public AudioClip GetCacheAudioClip(string filePath)
+        {
+            if (_audioClipCache.ContainsKey(filePath))
+            {
+                BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] GET {filePath}");
+                return _audioClipCache[filePath].Get();
+            }
+
+            return null;
         }
         
         /// <summary>
         /// Get a cached playlist by key (e.g., "spawn", "combat", "menu")
         /// </summary>
-        public static List<AudioClip> GetCachedPlaylist(string key)
+        public List<AudioClip> GetCachedPlaylist(string key)
         {
             return _playlistCache.ContainsKey(key) ? _playlistCache[key] : new List<AudioClip>();
         }
@@ -215,7 +231,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Cache a playlist by key
         /// </summary>
-        public static void CachePlaylist(string key, List<AudioClip> clips)
+        public void CachePlaylist(string key, List<AudioClip> clips)
         {
             _playlistCache[key] = clips;
         }
@@ -223,15 +239,20 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Check if a playlist is cached
         /// </summary>
-        public static bool IsPlaylistCached(string key)
+        public bool IsPlaylistCached(string key)
         {
             return _playlistCache.ContainsKey(key) && _playlistCache[key].Count > 0;
+        }
+
+        public Dictionary<string, AudioClipData> GetAllCache()
+        {
+            return _audioClipCache;
         }
         
         /// <summary>
         /// Clear specific playlist from cache
         /// </summary>
-        public static void ClearPlaylist(string key)
+        public void ClearPlaylist(string key)
         {
             if (_playlistCache.ContainsKey(key))
             {
@@ -242,7 +263,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Clear entire cache when memory usage is high or when explicitly requested
         /// </summary>
-        public static void ClearCache()
+        public void ClearCache()
         {
             if (_audioClipCache.Count > 0)
             {
@@ -256,7 +277,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Force reload of all audio clips (useful when music files are changed)
         /// </summary>
-        public static async Task ForceReloadAsync()
+        public async Task ForceReloadAsync()
         {
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[AUDIO CACHE] Force reload requested - clearing cache and reinitializing");
             ClearCache();
@@ -266,7 +287,7 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Stop the current initialization process
         /// </summary>
-        public static void StopInitialization()
+        public void StopInitialization()
         {
             if (_initializationCancellationTokenSource != null && !_initializationCancellationTokenSource.IsCancellationRequested)
             {
@@ -280,28 +301,60 @@ namespace BobbysMusicPlayer.Utils
         /// </summary>
         private static async Task<AudioClip> AsyncRequestAudioClip(string path, CancellationToken cancellationToken = default)
         {
-            var extension = Path.GetExtension(path).ToLowerInvariant();
+            string extension = Path.GetExtension(path).ToLowerInvariant();
 
-            using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension]))
+            using (UnityWebRequest uwr = UnityWebRequestMultimedia.GetAudioClip(path, GlobalData.AudioTypes[extension]))
             {
-                var operation = request.SendWebRequest();
+                ((DownloadHandlerAudioClip)uwr.downloadHandler).streamAudio = false;
+                var operation = uwr.SendWebRequest();
 
                 while (!operation.isDone)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
                     await Task.Yield();
-                }
 
-                if (request.result != UnityWebRequest.Result.Success)
+                if (uwr.result != UnityWebRequest.Result.Success)
                 {
                     BobbysMusicPlayerPlugin.LogSource.LogError(
-                        $"AudioCache: Failed to fetch audio clip -> '{path}', Error: {request.error}"
+                        $"Soundtrack: Failed to fetch audio clip -> '{path}', Error: {uwr.error}"
                     );
                     return null;
                 }
-
-                return DownloadHandlerAudioClip.GetContent(request);
+                
+                var original = DownloadHandlerAudioClip.GetContent(uwr);
+                
+                var bytes = AudioClipToBytes(original);
+                var stableClip = BytesToAudioClip(bytes, original.name, original.channels, original.frequency);
+                
+                return stableClip;
             }
+        }
+        
+        public static byte[] AudioClipToBytes(AudioClip clip)
+        {
+            if (clip == null)
+                return null;
+            
+            float[] samples = new float[clip.samples * clip.channels];
+            clip.GetData(samples, 0);
+            
+            byte[] bytes = new byte[samples.Length * sizeof(float)];
+            Buffer.BlockCopy(samples, 0, bytes, 0, bytes.Length);
+
+            return bytes;
+        }
+        
+        public static AudioClip BytesToAudioClip(byte[] bytes, string name, int channels, int frequency)
+        {
+            if (bytes == null || bytes.Length == 0)
+                return null;
+            
+            float[] samples = new float[bytes.Length / sizeof(float)];
+            Buffer.BlockCopy(bytes, 0, samples, 0, bytes.Length);
+            
+            int sampleCount = samples.Length / channels;
+            AudioClip clip = AudioClip.Create(name, sampleCount, channels, frequency, false);
+            clip.SetData(samples, 0);
+
+            return clip;
         }
     }
 }

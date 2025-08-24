@@ -2,7 +2,9 @@
 using EFT.UI;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Utils;
 using UnityEngine;
@@ -45,17 +47,107 @@ namespace BobbysMusicPlayer.Patches
         /// </summary>
         internal static async void LoadUIClips()
         {
+            // Check if already cached
+            if (BobbysMusicPlayerPlugin.Instance.GetCache().IsPlaylistCached("ui"))
+            {
+                LoadCachedUIClips();
+                return;
+            }
+            
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[UI SOUNDS] Loading UI sounds from files...");
+            
             int counter = 0;
             foreach (var list in UISounds)
             {
                 UISoundsClips[counter] = new List<AudioClip>();
                 foreach (var track in list)
                 {
-                    UISoundsClips[counter].Add(await AudioManager.AsyncRequestAudioClip(track));
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo(Path.GetFileName(track) + " assigned to " + GlobalData.UISoundsDir[counter]);
+                    // Use cached clip instead of reloading
+                    var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
+                    if (audioClip != null)
+                    {
+                        UISoundsClips[counter].Add(audioClip);
+                        BobbysMusicPlayerPlugin.LogSource.LogInfo(Path.GetFileName(track) + " assigned to " + GlobalData.UISoundsDir[counter]);
+                    }
                 }
                 counter++;
             }
+            
+            // Cache all UI sounds for future use
+            var allUISounds = new List<AudioClip>();
+            foreach (var clipList in UISoundsClips)
+            {
+                if (clipList != null)
+                {
+                    allUISounds.AddRange(clipList);
+                }
+            }
+            BobbysMusicPlayerPlugin.Instance.GetCache().CachePlaylist("ui", allUISounds);
+            
+            BobbysMusicPlayerPlugin.LogSource.LogInfo($"[UI SOUNDS] Loaded and cached {allUISounds.Count} UI sound clips");
+        }
+        
+        /// <summary>
+        /// Load UI sounds from cache without reloading files
+        /// </summary>
+        internal static void LoadCachedUIClips()
+        {
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[UI SOUNDS] Loading UI sounds from cache...");
+            
+            // Get all cached UI sounds
+            var allCachedSounds = BobbysMusicPlayerPlugin.Instance.GetCache().GetCachedPlaylist("ui");
+            if (allCachedSounds.IsNullOrEmpty())
+            {
+                BobbysMusicPlayerPlugin.LogSource.LogWarning("[UI SOUNDS] No cached UI sounds found, falling back to file loading");
+                BobbysMusicPlayerPlugin.Instance.GetCache().ClearPlaylist("ui");
+                LoadUIClips();
+                return;
+            }
+            
+            var cachedSoundsLookup = new Dictionary<string, AudioClip>();
+            foreach (var clip in allCachedSounds)
+            {
+                if (clip != null && !string.IsNullOrEmpty(clip.name))
+                {
+                    cachedSoundsLookup[clip.name] = clip;
+                }
+            }
+            
+            UISoundsClips = new List<AudioClip>[8];
+            int counter = 0;
+            
+            foreach (var list in UISounds)
+            {
+                UISoundsClips[counter] = new List<AudioClip>();
+                
+                foreach (var track in list)
+                {
+                    var fileName = Path.GetFileName(track);
+                    if (cachedSoundsLookup.TryGetValue(fileName, out var cachedClip))
+                    {
+                        UISoundsClips[counter].Add(cachedClip);
+                    }
+                    else
+                    {
+                        BobbysMusicPlayerPlugin.LogSource.LogWarning($"[UI SOUNDS] Cached clip not found for {fileName}, will load from file");
+                        
+                        var tempInt = counter;
+                        // Fallback: load from file if not in cache
+                        _ = Task.Run(async () =>
+                        {
+                            var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
+                            if (audioClip != null)
+                            {
+                                UISoundsClips[tempInt].Add(audioClip);
+                            }
+                        });
+                    }
+                }
+                
+                counter++;
+            }
+            
+            BobbysMusicPlayerPlugin.LogSource.LogInfo($"[UI SOUNDS] Loaded {UISoundsClips.Sum(list => list?.Count ?? 0)} UI sound clips from cache");
         }
     }
 }

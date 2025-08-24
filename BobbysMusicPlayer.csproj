@@ -40,6 +40,7 @@
     </PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Data\AudioClipData.cs" />
     <Compile Include="Data\GlobalData.cs" />
     <Compile Include="Data\PathData.cs" />
     <Compile Include="Extensions\ConfigurationManagerAttributes.cs" />

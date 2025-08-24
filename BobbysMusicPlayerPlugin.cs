@@ -4,8 +4,6 @@ using BepInEx;
 using BepInEx.Logging;
 using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Patches;
-using Comfort.Common;
-using EFT;
 using BobbysMusicPlayer.Jukebox;
 using BobbysMusicPlayer.Models;
 using BobbysMusicPlayer.Utils;
@@ -19,6 +17,7 @@ namespace BobbysMusicPlayer
         
         private SettingsModel _settings;
         private AudioManager _audio;
+        private AudioCache _cache;
         private MenuMusicJukebox _menuMusicJukebox;
         private SoundtrackJukebox _soundtrackJukebox;
         
@@ -26,7 +25,7 @@ namespace BobbysMusicPlayer
         
         public static bool InRaid { get; set; }
         
-        private async void Awake()
+        private void Awake()
         {
             LogSource = Logger;
             LogSource.LogInfo("Plugin loading...");
@@ -38,13 +37,20 @@ namespace BobbysMusicPlayer
                 _settings = SettingsModel.Create(Config);
 
                 GlobalData.EnvironmentDict[EnvironmentType.Indoor] = _settings.IndoorMultiplier.Value;
-
+                
+                // Initialization audio side
+                _audio = new AudioManager();
+                _audio.Init(gameObject);
+                
                 // Initialize audio cache in background to avoid blocking
+                _cache = new AudioCache();
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await AudioCache.InitializeAsync();
+                        await _cache.InitializeAsync();
+                        MenuMusicPatch.LoadAudioClips();
+                        UISoundsPatch.LoadUIClips();
                         LogSource.LogInfo("[AUDIO CACHE] Background initialization completed");
                     }
                     catch (Exception e)
@@ -52,10 +58,6 @@ namespace BobbysMusicPlayer
                         LogSource.LogError($"[AUDIO CACHE] Background initialization failed: {e.Message}");
                     }
                 });
-
-                // Initialization audio side
-                _audio = new AudioManager();
-                _audio.Init(gameObject);
 
                 // Init audio controls
                 _soundtrackJukebox = new SoundtrackJukebox();
@@ -77,9 +79,6 @@ namespace BobbysMusicPlayer
                 new OnGameWorldStartPatch().Enable();
                 new OnGameWorldDisposePatch().Enable();
 
-                MenuMusicPatch.LoadAudioClips();
-                UISoundsPatch.LoadUIClips();
-
                 LogSource.LogInfo("Plugin loaded!");
             }
             catch (Exception e)
@@ -94,11 +93,15 @@ namespace BobbysMusicPlayer
             // Debug keybind for testing spawn music
             if (_settings.KeyBind.Value.IsDown())
             {
-                _audio.PlaySpawnMusic(false);
+                foreach (var clip in _cache.GetAllCache())
+                {
+                    LogSource.LogInfo($"Name: {clip.Key} | Lenght: {clip.Value.clipBytes.Length}");
+                }
+                // _audio.PlaySpawnMusic(false);
             }
 #endif
 
-            _menuMusicJukebox?.CheckMenuMusicControls();
+            _menuMusicJukebox.CheckMenuMusicControls();
             
             if (!InRaid)
             {
@@ -139,5 +142,6 @@ namespace BobbysMusicPlayer
 
         public AudioManager GetAudio() => _audio;
         public MenuMusicJukebox GetMenuMusicJukeBox() => _menuMusicJukebox;
+        public AudioCache GetCache() => _cache;
     }
 }
