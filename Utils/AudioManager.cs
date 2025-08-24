@@ -127,7 +127,7 @@ namespace BobbysMusicPlayer.Utils
                     if (!CombatAudioSource.isPlaying && CombatAudioSource.loop == false)
                     {
                         CombatAudioSource.loop = true;
-                        BobbysMusicPlayerPlugin.LogSource.LogInfo("Combat music started");
+                        BobbysMusicPlayerPlugin.LogSource.LogInfo("[COMBAT] Play");
                         CombatAudioSource.Play();
                     }
                     if (Lerp <= 1)
@@ -149,6 +149,7 @@ namespace BobbysMusicPlayer.Utils
                         if (Lerp <= 0)
                         {
                             CombatAudioSource.loop = false;
+                            BobbysMusicPlayerPlugin.LogSource.LogInfo("[COMBAT] Stop");
                             CombatAudioSource.Stop();
                             // The combat AudioSource's clip will be randomly selected each time the combat music stops
                             CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)];
@@ -163,26 +164,24 @@ namespace BobbysMusicPlayer.Utils
         /// </summary>
         public void PlaySpawnMusic(bool check = true)
         {
-            if (check)
+            // Early return if no tracks available
+            if (_spawnTrackClipList.IsNullOrEmpty())
             {
-                if (SpawnTrackHasPlayed || _spawnTrackClipList.IsNullOrEmpty())
-                {
-                    return;
-                }
+                SpawnTrackHasPlayed = true;
+                return;
             }
-            else
+            
+            // Additional safety check for debug mode
+            if (!check && _spawnTrackClipList.IsNullOrEmpty())
             {
-                if(_spawnTrackClipList.IsNullOrEmpty())
-                {
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo("Empty spawn track list");
-                    return;
-                }
+                BobbysMusicPlayerPlugin.LogSource.LogInfo("Empty spawn track list");
+                SpawnTrackHasPlayed = true;
+                return;
             }
             
             SpawnAudioSource.clip = _spawnTrackClipList[Range(0, _spawnTrackClipList.Count)];
-            BobbysMusicPlayerPlugin.LogSource.LogInfo("spawnAudioSource.clip assigned to spawnTrackClip");
             SpawnAudioSource.Play();
-            BobbysMusicPlayerPlugin.LogSource.LogInfo("spawnAudioSource playing");
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[SPAWN] Play");
             SpawnTrackHasPlayed = true;
         }
         
@@ -258,14 +257,14 @@ namespace BobbysMusicPlayer.Utils
                         foreach (var track in _spawnTrackList)
                         {
                             _spawnTrackClipList.Add(await AsyncRequestAudioClip(track));
-                            BobbysMusicPlayerPlugin.LogSource.LogInfo("RequestAudioClip called for spawnTrackClip");
+                            BobbysMusicPlayerPlugin.LogSource.LogInfo("[PrepareRaidAudioClips] RequestAudioClip called for spawnTrackClip");
                         }
                         SpawnTrackHasPlayed = false;
                     }
                 
                     if (!_combatMusicTrackList.IsNullOrEmpty())
                     {
-                        BobbysMusicPlayerPlugin.LogSource.LogInfo("Load music to combat");
+                        BobbysMusicPlayerPlugin.LogSource.LogInfo("[PrepareRaidAudioClips] Load music to combat");
                     
                         // The next 4 lines prevent any issues that could be caused by exiting a raid before the combat timer ends
                         CombatTimer = 0f;
@@ -280,7 +279,7 @@ namespace BobbysMusicPlayer.Utils
                         }
                     
                         CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)];
-                        BobbysMusicPlayerPlugin.LogSource.LogInfo($"Music in combat loaded! {CombatAudioSource.clip.length}");
+                        BobbysMusicPlayerPlugin.LogSource.LogInfo($"[PrepareRaidAudioClips] Music in combat loaded! {CombatAudioSource.clip.length}");
                     }
                 }
             }

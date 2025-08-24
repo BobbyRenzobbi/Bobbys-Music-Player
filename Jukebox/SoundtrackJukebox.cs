@@ -26,7 +26,8 @@ namespace BobbysMusicPlayer.Jukebox
         /// </summary>
         public void CheckSoundtrackControls()
         {
-            if (audio.SpawnAudioSource.isPlaying|| audio == null) return;
+            // Don't allow soundtrack controls if spawn music or combat music is playing
+            if (audio.SpawnAudioSource.isPlaying || audio.CombatAudioSource.isPlaying || audio == null) return;
             
             if (Input.GetKeyDown(SettingsModel.Instance.PauseTrack.Value.MainKey) && audio.SoundtrackAudioSource.isPlaying)
             {
@@ -55,7 +56,7 @@ namespace BobbysMusicPlayer.Jukebox
         
         public void PlaySoundtrack()
         {
-            if (!SoundtrackCalled || audio.SoundtrackAudioSource.isPlaying || paused || audio.SpawnAudioSource.isPlaying || audio.AmbientTrackArray.IsNullOrEmpty() || !audio.HasFinishedLoadingAudio || audio == null)
+            if (!SoundtrackCalled || audio.SoundtrackAudioSource.isPlaying || paused || audio.SpawnAudioSource.isPlaying || audio.CombatAudioSource.isPlaying || audio.AmbientTrackArray.IsNullOrEmpty() || !audio.HasFinishedLoadingAudio || audio == null)
             {
                 return;
             }
@@ -68,7 +69,7 @@ namespace BobbysMusicPlayer.Jukebox
             audio.SoundtrackAudioSource.clip = audio.AmbientTrackArray[trackCounter];
             audio.SoundtrackAudioSource.Play();
             
-            BobbysMusicPlayerPlugin.LogSource.LogInfo("Soundtrack Playing " + audio.AmbientTrackNamesArray[trackCounter]);
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] Play " + audio.AmbientTrackNamesArray[trackCounter]);
             
             trackCounter++;
             soundtrackCoroutine = StaticManager.Instance.WaitSeconds(audio.SoundtrackAudioSource.clip.length, PlaySoundtrack);

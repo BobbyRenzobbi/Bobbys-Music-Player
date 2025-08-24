@@ -90,11 +90,6 @@ namespace BobbysMusicPlayer
                 return;
             }
             
-            if (Singleton<GameWorld>.Instance.MainPlayer == null || Singleton<GameWorld>.Instance.MainPlayer.Location == "hideout")
-            {
-                return;
-            }
-            
             MenuMusicPatch.HasReloadedAudio = false;
             
             _audio.PrepareRaidAudioClips();
@@ -102,13 +97,23 @@ namespace BobbysMusicPlayer
             OverlayDebug.Instance.UpdateOverlay();
 #endif
             
-            _audio.PlaySpawnMusic();
+            // Play spawn music only once when raid starts
+            if (!_audio.SpawnTrackHasPlayed)
+            {
+                _audio.PlaySpawnMusic();
+            }
+            
             _audio.VolumeSetter();
             _audio.CombatMusic();
             
             _soundtrackJukebox.CheckSoundtrackControls();
-            _soundtrackJukebox.SoundtrackCalled = true;
-            _soundtrackJukebox.PlaySoundtrack();
+            
+            // Only start soundtrack after spawn music has finished playing
+            if (_audio.SpawnTrackHasPlayed && !_audio.SpawnAudioSource.isPlaying)
+            {
+                _soundtrackJukebox.SoundtrackCalled = true;
+                _soundtrackJukebox.PlaySoundtrack();
+            }
         }
 
         public AudioManager GetAudio() => _audio;
