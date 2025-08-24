@@ -1,4 +1,6 @@
-﻿using BepInEx;
+﻿using System;
+using System.Threading.Tasks;
+using BepInEx;
 using BepInEx.Logging;
 using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Patches;
@@ -24,45 +26,66 @@ namespace BobbysMusicPlayer
         
         public static bool InRaid { get; set; }
         
-        private void Awake()
+        private async void Awake()
         {
-            Instance = this;
             LogSource = Logger;
             LogSource.LogInfo("Plugin loading...");
-            
-            // Init config
-            _settings = SettingsModel.Create(Config);
-            
-            GlobalData.EnvironmentDict[EnvironmentType.Indoor] = _settings.IndoorMultiplier.Value;
-            
-            // Initialization audio side
-            _audio = new AudioManager();
-            _audio.Init(gameObject);
+            try
+            {
+                Instance = this;
+                
+                // Init config
+                _settings = SettingsModel.Create(Config);
 
-            // Init audio controls
-            _soundtrackJukebox = new SoundtrackJukebox();
-            _soundtrackJukebox.Init(_audio);
+                GlobalData.EnvironmentDict[EnvironmentType.Indoor] = _settings.IndoorMultiplier.Value;
 
-            _menuMusicJukebox = new MenuMusicJukebox();
-            _menuMusicJukebox.Init(_audio, _soundtrackJukebox);
-            
-            new MenuMusicPatch().Enable();
-            new RaidEndMusicPatch().Enable();
-            new UISoundsPatch().Enable();
-            new ShotAtPatch().Enable();
-            new PlayerFiringPatch().Enable();
-            new DamageTakenPatch().Enable();
-            new ShotFiredNearPatch().Enable();
-            new GrenadePatch().Enable();
-            new MenuMusicMethod8Patch().Enable();
-            new StopMenuMusicPatch().Enable();
-            new OnGameWorldStartPatch().Enable();
-            new OnGameWorldDisposePatch().Enable();
-            
-            MenuMusicPatch.LoadAudioClips();
-            UISoundsPatch.LoadUIClips();
-            
-            LogSource.LogInfo("Plugin loaded!");
+                // Initialize audio cache in background to avoid blocking
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await AudioCache.InitializeAsync();
+                        LogSource.LogInfo("[AUDIO CACHE] Background initialization completed");
+                    }
+                    catch (Exception e)
+                    {
+                        LogSource.LogError($"[AUDIO CACHE] Background initialization failed: {e.Message}");
+                    }
+                });
+
+                // Initialization audio side
+                _audio = new AudioManager();
+                _audio.Init(gameObject);
+
+                // Init audio controls
+                _soundtrackJukebox = new SoundtrackJukebox();
+                _soundtrackJukebox.Init(_audio);
+
+                _menuMusicJukebox = new MenuMusicJukebox();
+                _menuMusicJukebox.Init(_audio, _soundtrackJukebox);
+
+                new MenuMusicPatch().Enable();
+                new RaidEndMusicPatch().Enable();
+                new UISoundsPatch().Enable();
+                new ShotAtPatch().Enable();
+                new PlayerFiringPatch().Enable();
+                new DamageTakenPatch().Enable();
+                new ShotFiredNearPatch().Enable();
+                new GrenadePatch().Enable();
+                new MenuMusicMethod8Patch().Enable();
+                new StopMenuMusicPatch().Enable();
+                new OnGameWorldStartPatch().Enable();
+                new OnGameWorldDisposePatch().Enable();
+
+                MenuMusicPatch.LoadAudioClips();
+                UISoundsPatch.LoadUIClips();
+
+                LogSource.LogInfo("Plugin loaded!");
+            }
+            catch (Exception e)
+            {
+                LogSource.LogError($"Error: {e.Message}");
+            }
         }
 
         private void Update()
@@ -74,8 +97,8 @@ namespace BobbysMusicPlayer
                 _audio.PlaySpawnMusic(false);
             }
 #endif
-            
-            _menuMusicJukebox.CheckMenuMusicControls();
+
+            _menuMusicJukebox?.CheckMenuMusicControls();
             
             if (!InRaid)
             {
@@ -89,25 +112,23 @@ namespace BobbysMusicPlayer
                 _audio.SpawnTrackHasPlayed = false;
                 return;
             }
-            
-            MenuMusicPatch.HasReloadedAudio = false;
-            
+
             _audio.PrepareRaidAudioClips();
 #if DEBUG
             OverlayDebug.Instance.UpdateOverlay();
 #endif
-            
+
             // Play spawn music only once when raid starts
             if (!_audio.SpawnTrackHasPlayed)
             {
                 _audio.PlaySpawnMusic();
             }
-            
+
             _audio.VolumeSetter();
             _audio.CombatMusic();
-            
+
             _soundtrackJukebox.CheckSoundtrackControls();
-            
+
             // Only start soundtrack after spawn music has finished playing
             if (_audio.SpawnTrackHasPlayed && !_audio.SpawnAudioSource.isPlaying)
             {
