@@ -72,10 +72,6 @@ namespace BobbysMusicPlayer.Jukebox
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] Play " + audio.AmbientTrackNamesArray[trackCounter]);
             
             trackCounter++;
-            if (audio.SoundtrackAudioSource.clip == null)
-            {
-                BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] WTF");
-            }
             soundtrackCoroutine = StaticManager.Instance.WaitSeconds(audio.SoundtrackAudioSource.clip.length, PlaySoundtrack);
             
             if (trackCounter >= audio.AmbientTrackArray.Count)
@@ -89,7 +85,10 @@ namespace BobbysMusicPlayer.Jukebox
         private void PauseSoundtrack()
         {
             audio.SoundtrackAudioSource.Pause();
-            StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            if (soundtrackCoroutine != null)
+            {
+                StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            }
             pausedTime = audio.SoundtrackAudioSource.clip.length - audio.SoundtrackAudioSource.time;
             paused = true;
         }
@@ -114,7 +113,10 @@ namespace BobbysMusicPlayer.Jukebox
                 trackCounter = audio.AmbientTrackArray.Count - 1;
             }
                 
-            StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            if (soundtrackCoroutine != null)
+            {
+                StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            }
             paused = false;
             PlaySoundtrack();
         }
@@ -129,7 +131,10 @@ namespace BobbysMusicPlayer.Jukebox
                 trackCounter = audio.AmbientTrackArray.Count + (trackCounter);
             }
                 
-            StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            if (soundtrackCoroutine != null)
+            {
+                StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            }
             paused = false;
             PlaySoundtrack();
         }
@@ -137,7 +142,10 @@ namespace BobbysMusicPlayer.Jukebox
         private void SkipTrack()
         {
             audio.SoundtrackAudioSource.Stop();
-            StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            if (soundtrackCoroutine != null)
+            {
+                StaticManager.Instance.StopCoroutine(soundtrackCoroutine);
+            }
             paused = false;
             PlaySoundtrack();
         }
