@@ -9,7 +9,6 @@ using Comfort.Common;
 using System.Linq;
 using EFT;
 using System;
-using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Jukebox;
 using BobbysMusicPlayer.Models;
 using BobbysMusicPlayer.Utils;
@@ -22,7 +21,7 @@ namespace BobbysMusicPlayer.Patches
     {
         internal static int trackCounter;
         internal static List<string> menuTrackList = new();
-        internal static List<AudioClipData> trackArray = new();
+        internal static List<AudioClip> trackArray = new();
         private static List<string> trackListToPlay = new();
         private static List<string> trackNamesArray = new();
         internal static bool HasReloadedAudio = false;
@@ -63,12 +62,12 @@ namespace BobbysMusicPlayer.Patches
                             } while (randomArray.Contains(randomInt));
 
                             randomArray[i] = randomInt;
-                            trackArray.Add(new AudioClipData(___audioClip_0[randomInt]));
+                            trackArray.Add(___audioClip_0[randomInt]);
                         }
                     }
 
                     Singleton<GUISounds>.Instance.method_7();
-                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter].Get();
+                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter];
                     audio.MenuMusicAudioSource.Play();
                     trackCounter++;
                     menuMusicJukebox.Coroutine = StaticManager.Instance.WaitSeconds(
@@ -87,7 +86,7 @@ namespace BobbysMusicPlayer.Patches
                     }
 
                     Singleton<GUISounds>.Instance.method_7();
-                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter].Get();
+                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter];
                     audio.MenuMusicAudioSource.Play();
                     BobbysMusicPlayerPlugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
                     trackCounter++;
@@ -118,13 +117,13 @@ namespace BobbysMusicPlayer.Patches
             if (BobbysMusicPlayerPlugin.Instance.GetCache().IsPlaylistCached("menu"))
             {
                 var cachedPlaylist = BobbysMusicPlayerPlugin.Instance.GetCache().GetCachedPlaylist("menu");
-                trackArray = new List<AudioClipData>(cachedPlaylist);
+                trackArray = new List<AudioClip>(cachedPlaylist);
                 trackNamesArray = new List<string>();
                 
                 // Extract names from cached clips
                 foreach (var clip in trackArray)
                 {
-                    trackNamesArray.Add(clip.clipName);
+                    trackNamesArray.Add(clip.name);
                 }
                 
                 HasReloadedAudio = true;
@@ -154,15 +153,15 @@ namespace BobbysMusicPlayer.Patches
                 string trackName = Path.GetFileName(track);
                 
                 // Use cached clip instead of reloading
-                AudioClipData audioClipData = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClipData(track);
-                if (audioClipData != null)
+                AudioClip audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
+                if (audioClip != null)
                 {
-                    trackArray.Add(audioClipData);
+                    trackArray.Add(audioClip);
                     trackNamesArray.Add(trackName);
                     trackListToPlay.Remove(track);
-                    totalLength += audioClipData.Get().length;
+                    totalLength += audioClip.length;
                     
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo("[MENU MUSIC] " + trackName + " has been loaded from cache and added to playlist");
+                    BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded from cache and added to playlist");
                 }
                 else
                 {
@@ -170,7 +169,7 @@ namespace BobbysMusicPlayer.Patches
                     trackListToPlay.Remove(track);
                 }
             } while (totalLength < targetLength && !trackListToPlay.IsNullOrEmpty());
-            BobbysMusicPlayerPlugin.Instance.GetCache().CachePlaylist("menu", new List<AudioClipData>(trackArray));
+            BobbysMusicPlayerPlugin.Instance.GetCache().CachePlaylist("menu", new List<AudioClip>(trackArray));
         }
     }
     

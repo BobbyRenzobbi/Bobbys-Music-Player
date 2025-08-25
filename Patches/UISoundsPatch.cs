@@ -16,7 +16,7 @@ namespace BobbysMusicPlayer.Patches
     public class UISoundsPatch : ModulePatch
     {
         internal static List<string>[] UISounds = new List<string>[8];
-        private static List<AudioClipData>[] UISoundsClips = new List<AudioClipData>[8];
+        private static List<AudioClip>[] UISoundsClips = new List<AudioClip>[8];
         
         protected override MethodBase GetTargetMethod()
         {
@@ -38,7 +38,7 @@ namespace BobbysMusicPlayer.Patches
             }
             
             // The sound that plays in game will be a randomly selected sound from the corresponding folder
-            __result = audioClipArray[Range(0, audioClipArray.Count)].Get();
+            __result = audioClipArray[Range(0, audioClipArray.Count)];
             return false;
         }
         
@@ -59,11 +59,11 @@ namespace BobbysMusicPlayer.Patches
             int counter = 0;
             foreach (var list in UISounds)
             {
-                UISoundsClips[counter] = new List<AudioClipData>();
+                UISoundsClips[counter] = new List<AudioClip>();
                 foreach (var track in list)
                 {
                     // Use cached clip instead of reloading
-                    var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClipData(track);
+                    var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
                     if (audioClip != null)
                     {
                         UISoundsClips[counter].Add(audioClip);
@@ -74,7 +74,7 @@ namespace BobbysMusicPlayer.Patches
             }
             
             // Cache all UI sounds for future use
-            var allUISounds = new List<AudioClipData>();
+            var allUISounds = new List<AudioClip>();
             foreach (var clipList in UISoundsClips)
             {
                 if (clipList != null)
@@ -104,21 +104,21 @@ namespace BobbysMusicPlayer.Patches
                 return;
             }
             
-            var cachedSoundsLookup = new Dictionary<string, AudioClipData>();
+            var cachedSoundsLookup = new Dictionary<string, AudioClip>();
             foreach (var clip in allCachedSounds)
             {
-                if (clip != null && !string.IsNullOrEmpty(clip.Get().name))
+                if (clip != null && !string.IsNullOrEmpty(clip.name))
                 {
-                    cachedSoundsLookup[clip.Get().name] = clip;
+                    cachedSoundsLookup[clip.name] = clip;
                 }
             }
             
-            UISoundsClips = new List<AudioClipData>[8];
+            UISoundsClips = new List<AudioClip>[8];
             int counter = 0;
             
             foreach (var list in UISounds)
             {
-                UISoundsClips[counter] = new List<AudioClipData>();
+                UISoundsClips[counter] = new List<AudioClip>();
                 
                 foreach (var track in list)
                 {
@@ -135,7 +135,7 @@ namespace BobbysMusicPlayer.Patches
                         // Fallback: load from file if not in cache
                         _ = Task.Run(async () =>
                         {
-                            var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClipData(track);
+                            var audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
                             if (audioClip != null)
                             {
                                 UISoundsClips[tempInt].Add(audioClip);

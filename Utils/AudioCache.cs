@@ -16,7 +16,7 @@ namespace BobbysMusicPlayer.Utils
     public class AudioCache
     {
         private readonly Dictionary<string, AudioClipData> _audioClipCache = new();
-        private readonly Dictionary<string, List<AudioClipData>> _playlistCache = new();
+        private readonly Dictionary<string, List<AudioClip>> _playlistCache = new();
         private bool _isInitialized = false;
         private CancellationTokenSource _initializationCancellationTokenSource;
         
@@ -209,29 +209,6 @@ namespace BobbysMusicPlayer.Utils
             return audioClip;
         }
         
-        /// <summary>
-        /// Get AudioClipData from cache or load it if not cached
-        /// </summary>
-        public async Task<AudioClipData> GetOrCacheAudioClipData(string filePath)
-        {
-            if (_audioClipCache.ContainsKey(filePath))
-            {
-                BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] GET {filePath}");
-                return _audioClipCache[filePath];
-            }
-            
-            // If not in cache, load and cache it
-            var audioClip = await AsyncRequestAudioClip(filePath);
-
-            if (audioClip != null)
-            {
-                _audioClipCache[filePath] = new AudioClipData(audioClip);
-            }
-            
-            BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] REQUEST {filePath}");
-            return _audioClipCache[filePath];
-        }
-        
         public AudioClip GetCacheAudioClip(string filePath)
         {
             if (_audioClipCache.ContainsKey(filePath))
@@ -246,15 +223,15 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Get a cached playlist by key (e.g., "spawn", "combat", "menu")
         /// </summary>
-        public List<AudioClipData> GetCachedPlaylist(string key)
+        public List<AudioClip> GetCachedPlaylist(string key)
         {
-            return _playlistCache.ContainsKey(key) ? _playlistCache[key] : new List<AudioClipData>();
+            return _playlistCache.ContainsKey(key) ? _playlistCache[key] : new List<AudioClip>();
         }
         
         /// <summary>
         /// Cache a playlist by key
         /// </summary>
-        public void CachePlaylist(string key, List<AudioClipData> clips)
+        public void CachePlaylist(string key, List<AudioClip> clips)
         {
             _playlistCache[key] = clips;
         }
