@@ -3,6 +3,7 @@ using EFT.UI;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Utils;
 using UnityEngine;
 using HarmonyLib;
@@ -19,7 +20,7 @@ namespace BobbysMusicPlayer.Patches
             [EEndGameSoundType.ArenaLose] = DeathMusicList
         };
         
-        private static AudioClip raidEndClip;
+        private static AudioClipData raidEndClip;
 
         protected override MethodBase GetTargetMethod()
         {
@@ -38,7 +39,7 @@ namespace BobbysMusicPlayer.Patches
             
             if (raidEndClip != null)
             {
-                __result = raidEndClip;
+                __result = raidEndClip.Get();
                 return false;
             }
             
@@ -48,7 +49,7 @@ namespace BobbysMusicPlayer.Patches
         private static void LoadNextTrack(EEndGameSoundType soundType)
         {
             string raidEndTrack = raidEndDictionary[soundType][Range(0, raidEndDictionary[soundType].Count)];
-            raidEndClip = AudioManager.RequestAudioClip(raidEndTrack);
+            raidEndClip = new AudioClipData(AudioManager.RequestAudioClip(raidEndTrack));
             
             string trackName = Path.GetFileName(raidEndTrack);
             BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " assigned to " + soundType);

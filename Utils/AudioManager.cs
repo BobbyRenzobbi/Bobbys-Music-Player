@@ -13,6 +13,7 @@ using EFT.InventoryLogic;
 using UnityEngine;
 using UnityEngine.Networking;
 using static UnityEngine.Random;
+using Object = UnityEngine.Object;
 
 namespace BobbysMusicPlayer.Utils
 {
@@ -32,10 +33,10 @@ namespace BobbysMusicPlayer.Utils
         private List<string> _spawnTrackList = new();
         private List<string> _defaultTrackList = new();
         
-        private List<AudioClip> _combatMusicClipList = new();
-        private List<AudioClip> _spawnTrackClipList = new();
+        private List<AudioClipData> _combatMusicClipList = new();
+        private List<AudioClipData> _spawnTrackClipList = new();
         public List<string> AmbientTrackNamesArray = new();
-        public List<AudioClip> AmbientTrackArray = new();
+        public List<AudioClipData> AmbientTrackArray = new();
         
         public float Lerp;
         public float CurrentEnvironmentMultiplier;
@@ -152,7 +153,7 @@ namespace BobbysMusicPlayer.Utils
                             BobbysMusicPlayerPlugin.LogSource.LogInfo("[COMBAT] Stop");
                             CombatAudioSource.Stop();
                             // The combat AudioSource's clip will be randomly selected each time the combat music stops
-                            CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)];
+                            CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)].Get();
                         }
                     }
                 }
@@ -179,7 +180,7 @@ namespace BobbysMusicPlayer.Utils
                 return;
             }
             
-            SpawnAudioSource.clip = _spawnTrackClipList[Range(0, _spawnTrackClipList.Count)];
+            SpawnAudioSource.clip = _spawnTrackClipList[Range(0, _spawnTrackClipList.Count)].Get();
             SpawnAudioSource.Play();
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[SPAWN] Play");
             SpawnTrackHasPlayed = true;
@@ -256,7 +257,9 @@ namespace BobbysMusicPlayer.Utils
                         _spawnTrackClipList.Clear();
                         foreach (var track in _spawnTrackList)
                         {
-                            _spawnTrackClipList.Add(await AsyncRequestAudioClip(track));
+                            var spawnTrack = await AsyncRequestAudioClip(track);
+                            _spawnTrackClipList.Add(new AudioClipData(spawnTrack));
+                            Object.Destroy(spawnTrack);
                             BobbysMusicPlayerPlugin.LogSource.LogInfo("[PrepareRaidAudioClips] RequestAudioClip called for spawnTrackClip");
                         }
                         SpawnTrackHasPlayed = false;
@@ -275,10 +278,12 @@ namespace BobbysMusicPlayer.Utils
                         _combatMusicClipList.Clear();
                         foreach (var track in _combatMusicTrackList)
                         {
-                            _combatMusicClipList.Add(await AsyncRequestAudioClip(track));
+                            var combatTrack = await AsyncRequestAudioClip(track);
+                            _combatMusicClipList.Add(new  AudioClipData(combatTrack));
+                            Object.Destroy(combatTrack);
                         }
                     
-                        CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)];
+                        CombatAudioSource.clip = _combatMusicClipList[Range(0, _combatMusicClipList.Count)].Get();
                         BobbysMusicPlayerPlugin.LogSource.LogInfo($"[PrepareRaidAudioClips] Music in combat loaded! {CombatAudioSource.clip.length}");
                     }
                 }
@@ -323,13 +328,14 @@ namespace BobbysMusicPlayer.Utils
                 int nextRandom = Range(0, _ambientTrackListToPlay.Count);
                 string track = _ambientTrackListToPlay[nextRandom];
                 string trackName = Path.GetFileName(track);
-                AudioClip unityAudioClip = await AsyncRequestAudioClip(track);
-                AmbientTrackArray.Add(unityAudioClip);
+                var ambientTrack = await AsyncRequestAudioClip(track);
+                AmbientTrackArray.Add(new AudioClipData(ambientTrack));
+                Object.Destroy(ambientTrack);
                 AmbientTrackNamesArray.Add(trackName);
                 _ambientTrackListToPlay.Remove(track);
                 
                 // Adding the length of each track to totalLength makes sure that the mod loads the minimum number of random tracks to meet the target length.
-                totalLength += AmbientTrackArray.Last().length;
+                totalLength += AmbientTrackArray.Last().Get().length;
                 BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
             }
             HasFinishedLoadingAudio = true;

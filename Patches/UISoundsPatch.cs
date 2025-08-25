@@ -14,7 +14,7 @@ namespace BobbysMusicPlayer.Patches
     public class UISoundsPatch : ModulePatch
     {
         internal static List<string>[] UISounds = new List<string>[8];
-        private static List<AudioClip>[] UISoundsClips = new List<AudioClip>[8];
+        private static List<AudioClipData>[] UISoundsClips = new List<AudioClipData>[8];
         
         protected override MethodBase GetTargetMethod()
         {
@@ -36,7 +36,7 @@ namespace BobbysMusicPlayer.Patches
             }
             
             // The sound that plays in game will be a randomly selected sound from the corresponding folder
-            __result = audioClipArray[Range(0, audioClipArray.Count)];
+            __result = audioClipArray[Range(0, audioClipArray.Count)].Get();
             return false;
         }
         
@@ -48,10 +48,12 @@ namespace BobbysMusicPlayer.Patches
             int counter = 0;
             foreach (var list in UISounds)
             {
-                UISoundsClips[counter] = new List<AudioClip>();
+                UISoundsClips[counter] = new List<AudioClipData>();
                 foreach (var track in list)
                 {
-                    UISoundsClips[counter].Add(await AudioManager.AsyncRequestAudioClip(track));
+                    var uiTrack = await AudioManager.AsyncRequestAudioClip(track);
+                    UISoundsClips[counter].Add(new AudioClipData(uiTrack));
+                    Object.Destroy(uiTrack);
                     BobbysMusicPlayerPlugin.LogSource.LogInfo(Path.GetFileName(track) + " assigned to " + GlobalData.UISoundsDir[counter]);
                 }
                 counter++;

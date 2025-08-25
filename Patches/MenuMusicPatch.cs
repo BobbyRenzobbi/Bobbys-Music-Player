@@ -9,6 +9,7 @@ using Comfort.Common;
 using System.Linq;
 using EFT;
 using System;
+using BobbysMusicPlayer.Data;
 using BobbysMusicPlayer.Jukebox;
 using BobbysMusicPlayer.Models;
 using BobbysMusicPlayer.Utils;
@@ -21,7 +22,7 @@ namespace BobbysMusicPlayer.Patches
     {
         internal static int trackCounter;
         internal static List<string> menuTrackList = new();
-        internal static List<AudioClip> trackArray = new();
+        internal static List<AudioClipData> trackArray = new();
         private static List<string> trackListToPlay = new();
         private static List<string> trackNamesArray = new();
         internal static bool HasReloadedAudio = false;
@@ -62,12 +63,12 @@ namespace BobbysMusicPlayer.Patches
                             } while (randomArray.Contains(randomInt));
 
                             randomArray[i] = randomInt;
-                            trackArray.Add(___audioClip_0[randomInt]);
+                            trackArray.Add(new AudioClipData(___audioClip_0[randomInt]));
                         }
                     }
 
                     Singleton<GUISounds>.Instance.method_7();
-                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter];
+                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter].Get();
                     audio.MenuMusicAudioSource.Play();
                     trackCounter++;
                     menuMusicJukebox.Coroutine = StaticManager.Instance.WaitSeconds(
@@ -86,7 +87,7 @@ namespace BobbysMusicPlayer.Patches
                     }
 
                     Singleton<GUISounds>.Instance.method_7();
-                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter];
+                    audio.MenuMusicAudioSource.clip = trackArray[trackCounter].Get();
                     audio.MenuMusicAudioSource.Play();
                     BobbysMusicPlayerPlugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
                     trackCounter++;
@@ -136,10 +137,10 @@ namespace BobbysMusicPlayer.Patches
                 
                 AudioClip unityAudioClip = await AudioManager.AsyncRequestAudioClip(track);
                 
-                trackArray.Add(unityAudioClip);
+                trackArray.Add(new AudioClipData(unityAudioClip));
                 trackNamesArray.Add(trackName);
                 trackListToPlay.Remove(track);
-                totalLength += trackArray.Last().length;
+                totalLength += trackArray.Last().Get().length;
                 
                 BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
             } while (totalLength < targetLength && !trackListToPlay.IsNullOrEmpty());

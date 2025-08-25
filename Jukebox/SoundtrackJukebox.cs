@@ -66,7 +66,7 @@ namespace BobbysMusicPlayer.Jukebox
                 trackCounter = 0;
             }
             
-            audio.SoundtrackAudioSource.clip = audio.AmbientTrackArray[trackCounter];
+            audio.SoundtrackAudioSource.clip = audio.AmbientTrackArray[trackCounter].Get();
             audio.SoundtrackAudioSource.Play();
             
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] Play " + audio.AmbientTrackNamesArray[trackCounter]);
