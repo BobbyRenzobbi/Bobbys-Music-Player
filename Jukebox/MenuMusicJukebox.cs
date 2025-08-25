@@ -70,7 +70,7 @@ namespace BobbysMusicPlayer.Jukebox
         private void ResumeTrack()
         {
             audio.MenuMusicAudioSource.UnPause();
-            Coroutine = StaticManager.Instance.WaitSeconds(pausedTime, Singleton<GUISounds>.Instance.method_3);
+            Coroutine = StaticManager.Instance.WaitSeconds(pausedTime, new Action(Singleton<GUISounds>.Instance.method_3));
             paused = false;
         }
 
