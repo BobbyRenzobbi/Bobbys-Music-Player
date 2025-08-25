@@ -109,28 +109,10 @@ namespace BobbysMusicPlayer.Patches
         }
         
         /// <summary>
-        /// This method is largely identical to AudioManager.LoadAmbientSoundtrackClips
+        /// This method is largely identical to BobbysMusicPlayerPlugin.LoadAmbientSoundtrackClips
         /// </summary>
         internal static async void LoadAudioClips()
         {
-            // Check if already cached
-            if (BobbysMusicPlayerPlugin.Instance.GetCache().IsPlaylistCached("menu"))
-            {
-                var cachedPlaylist = BobbysMusicPlayerPlugin.Instance.GetCache().GetCachedPlaylist("menu");
-                trackArray = new List<AudioClip>(cachedPlaylist);
-                trackNamesArray = new List<string>();
-                
-                // Extract names from cached clips
-                foreach (var clip in trackArray)
-                {
-                    trackNamesArray.Add(clip.name);
-                }
-                
-                HasReloadedAudio = true;
-                BobbysMusicPlayerPlugin.LogSource.LogInfo($"[MENU MUSIC] Using cached playlist with {trackArray.Count} tracks");
-                return;
-            }
-            
             float totalLength = 0;
             HasReloadedAudio = true;
             
@@ -152,24 +134,15 @@ namespace BobbysMusicPlayer.Patches
                 string track = trackListToPlay[nextRandom];
                 string trackName = Path.GetFileName(track);
                 
-                // Use cached clip instead of reloading
-                AudioClip audioClip = await BobbysMusicPlayerPlugin.Instance.GetCache().GetOrCacheAudioClip(track);
-                if (audioClip != null)
-                {
-                    trackArray.Add(audioClip);
-                    trackNamesArray.Add(trackName);
-                    trackListToPlay.Remove(track);
-                    totalLength += audioClip.length;
-                    
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded from cache and added to playlist");
-                }
-                else
-                {
-                    // Remove failed track from list to avoid infinite loop
-                    trackListToPlay.Remove(track);
-                }
+                AudioClip unityAudioClip = await AudioManager.AsyncRequestAudioClip(track);
+                
+                trackArray.Add(unityAudioClip);
+                trackNamesArray.Add(trackName);
+                trackListToPlay.Remove(track);
+                totalLength += trackArray.Last().length;
+                
+                BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
             } while (totalLength < targetLength && !trackListToPlay.IsNullOrEmpty());
-            BobbysMusicPlayerPlugin.Instance.GetCache().CachePlaylist("menu", new List<AudioClip>(trackArray));
         }
     }
     

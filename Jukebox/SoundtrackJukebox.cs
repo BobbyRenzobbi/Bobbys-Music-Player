@@ -72,10 +72,6 @@ namespace BobbysMusicPlayer.Jukebox
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] Play " + audio.AmbientTrackNamesArray[trackCounter]);
             
             trackCounter++;
-            if (audio.SoundtrackAudioSource.clip == null)
-            {
-                BobbysMusicPlayerPlugin.LogSource.LogInfo("[SOUNDTRACK] WTF");
-            }
             soundtrackCoroutine = StaticManager.Instance.WaitSeconds(audio.SoundtrackAudioSource.clip.length, PlaySoundtrack);
             
             if (trackCounter >= audio.AmbientTrackArray.Count)
