@@ -89,7 +89,7 @@ namespace BobbysMusicPlayer.Patches
                     Singleton<GUISounds>.Instance.method_7();
                     audio.MenuMusicAudioSource.clip = trackArray[trackCounter].Get();
                     audio.MenuMusicAudioSource.Play();
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo("Playing " + trackNamesArray[trackCounter]);
+                    BobbysMusicPlayerPlugin.LogSource.LogInfo("[MENU MUSIC] Playing " + trackNamesArray[trackCounter]);
                     trackCounter++;
                     menuMusicJukebox.Coroutine = StaticManager.Instance.WaitSeconds(
                         audio.MenuMusicAudioSource.clip.length, Singleton<GUISounds>.Instance.method_3);
@@ -104,7 +104,7 @@ namespace BobbysMusicPlayer.Patches
             }
             catch (Exception e)
             {
-                BobbysMusicPlayerPlugin.LogSource.LogError("Error while loading music "+e);
+                BobbysMusicPlayerPlugin.LogSource.LogError("[MENU MUSIC] Error while loading music "+e);
                 return false;
             }
         }
@@ -121,7 +121,7 @@ namespace BobbysMusicPlayer.Patches
             {
                 return;
             }
-            
+
             trackArray.Clear();
             trackNamesArray.Clear();
             trackListToPlay.Clear();
@@ -142,7 +142,7 @@ namespace BobbysMusicPlayer.Patches
                 trackListToPlay.Remove(track);
                 totalLength += trackArray.Last().Get().length;
                 
-                BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
+                BobbysMusicPlayerPlugin.LogSource.LogInfo("[MENU MUSIC] " + trackName + " has been loaded and added to playlist");
             } while (totalLength < targetLength && !trackListToPlay.IsNullOrEmpty());
         }
     }
@@ -157,7 +157,7 @@ namespace BobbysMusicPlayer.Patches
         [PatchPrefix]
         static bool Prefix()
         {
-            BobbysMusicPlayerPlugin.LogSource.LogInfo("GUISounds.method_8 called");
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[MENU MUSIC] GUISounds.method_8 called");
             MenuMusicJukebox menuMusicJukebox = BobbysMusicPlayerPlugin.Instance.GetMenuMusicJukeBox();
             
             if (menuMusicJukebox.Coroutine == null)
@@ -181,7 +181,7 @@ namespace BobbysMusicPlayer.Patches
         [PatchPrefix]
         static bool Prefix(float transitionTime)
         {
-            BobbysMusicPlayerPlugin.LogSource.LogInfo("GUISounds.StopMenuBackgroundMusicWithDelay called");
+            BobbysMusicPlayerPlugin.LogSource.LogInfo("[MENU MUSIC] GUISounds.StopMenuBackgroundMusicWithDelay called");
             MenuMusicJukebox menuMusicJukebox = BobbysMusicPlayerPlugin.Instance.GetMenuMusicJukeBox();
             
             Singleton<GUISounds>.Instance.method_8();

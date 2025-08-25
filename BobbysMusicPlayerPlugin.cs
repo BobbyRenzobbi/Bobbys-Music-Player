@@ -92,7 +92,7 @@ namespace BobbysMusicPlayer
             
             MenuMusicPatch.HasReloadedAudio = false;
             
-            _audio.PrepareRaidAudioClips();
+            _audio.PrepareRaidAudioClips(); 
 #if DEBUG
             OverlayDebug.Instance.UpdateOverlay();
 #endif

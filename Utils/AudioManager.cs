@@ -205,34 +205,74 @@ namespace BobbysMusicPlayer.Utils
         /// </summary>
         private void LoadMusic()
         {
-            MenuMusicPatch.menuTrackList.AddRange(Directory.GetFiles(PathData.CustomMenuMusicSounds));
+            int countFiles = 0;
+
+            if (Directory.Exists(PathData.CustomMenuMusicSounds))
+            {
+                countFiles += Directory.GetFiles(PathData.CustomMenuMusicSounds).Length;
+                MenuMusicPatch.menuTrackList.AddRange(Directory.GetFiles(PathData.CustomMenuMusicSounds));
+            }
             
             //This if statement exists just in case some people install outdated music packs by mistake
             if (MenuMusicPatch.menuTrackList.IsNullOrEmpty() && Directory.Exists(PathData.CustomMenuMusicSoundsMissing))
             {
+                countFiles += Directory.GetFiles(PathData.CustomMenuMusicSoundsMissing).Length;
                 MenuMusicPatch.menuTrackList.AddRange(Directory.GetFiles(PathData.CustomMenuMusicSoundsMissing));
             }
             
-            _defaultTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackDefault));
+            if (Directory.Exists(PathData.SoundtrackDefault))
+            {
+                countFiles += Directory.GetFiles(PathData.SoundtrackDefault).Length;
+                _defaultTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackDefault));
+            }
+            
             if (_defaultTrackList.IsNullOrEmpty() && Directory.Exists(PathData.SoundtrackSoundsMissing))
             {
+                countFiles += Directory.GetFiles(PathData.SoundtrackSoundsMissing).Length;
                 _defaultTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackSoundsMissing));
             }
             
-            _combatMusicTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackCombat));
+            if (Directory.Exists(PathData.SoundtrackCombat))
+            {
+                countFiles += Directory.GetFiles(PathData.SoundtrackCombat).Length;
+                _combatMusicTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackCombat));
+            }
             
-            _spawnTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackSpawn));
+            if (Directory.Exists(PathData.SoundtrackSpawn))
+            {
+                countFiles += Directory.GetFiles(PathData.SoundtrackSpawn).Length;
+                _spawnTrackList.AddRange(Directory.GetFiles(PathData.SoundtrackSpawn));
+            }
             
-            RaidEndMusicPatch.DeathMusicList.AddRange(Directory.GetFiles(PathData.SoundtrackDeath));
-            RaidEndMusicPatch.ExtractMusicList.AddRange(Directory.GetFiles(PathData.SoundtrackExtract));
+            if (Directory.Exists(PathData.SoundtrackDeath))
+            {
+                countFiles += Directory.GetFiles(PathData.SoundtrackDeath).Length;
+                RaidEndMusicPatch.DeathMusicList.AddRange(Directory.GetFiles(PathData.SoundtrackDeath));
+            }
+            
+            if (Directory.Exists(PathData.SoundtrackExtract))
+            {
+                countFiles += Directory.GetFiles(PathData.SoundtrackExtract).Length;
+                RaidEndMusicPatch.ExtractMusicList.AddRange(Directory.GetFiles(PathData.SoundtrackExtract));
+            }
             
             var counter = 0;
-            foreach (var dir in GlobalData.UISoundsDir)
+            foreach (var pathUISoundDir in GlobalData.UISoundsDir)
             {
-                // Each element of uiSounds is a List of strings so that users can add as few or as many sounds as they want to a given folder
-                UISoundsPatch.UISounds[counter] = new List<string>();
-                UISoundsPatch.UISounds[counter].AddRange(Directory.GetFiles(PathData.SoundtrackUI + dir));
+                if (Directory.Exists(pathUISoundDir))
+                {
+                    // Each element of uiSounds is a List of strings so that users can add as few or as many sounds as they want to a given folder
+                    countFiles += Directory.GetFiles(pathUISoundDir).Length;
+                    
+                    UISoundsPatch.UISounds[counter] = new List<string>();
+                    UISoundsPatch.UISounds[counter].AddRange(Directory.GetFiles(PathData.SoundtrackUI + pathUISoundDir));
+                }
                 counter++;
+            }
+
+            if (countFiles >= 100)
+            {
+                BobbysMusicPlayerPlugin.LogSource.LogWarning("[WARNING] Over 100 tracks loaded, possibly higher RAM consumption!!!");
             }
         }
         
@@ -336,7 +376,7 @@ namespace BobbysMusicPlayer.Utils
                 
                 // Adding the length of each track to totalLength makes sure that the mod loads the minimum number of random tracks to meet the target length.
                 totalLength += AmbientTrackArray.Last().Get().length;
-                BobbysMusicPlayerPlugin.LogSource.LogInfo(trackName + " has been loaded and added to playlist");
+                BobbysMusicPlayerPlugin.LogSource.LogInfo("[LoadAmbientSoundtrackClips] " + trackName + " has been loaded and added to playlist");
             }
             HasFinishedLoadingAudio = true;
         }
