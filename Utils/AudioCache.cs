@@ -23,13 +23,9 @@ namespace BobbysMusicPlayer.Utils
         /// <summary>
         /// Initialize the audio cache with all available music files
         /// </summary>
-        public async Task InitializeAsync(Action<bool> callback)
+        public async Task InitializeAsync()
         {
-            if (_isInitialized)
-            {
-                callback?.Invoke(false);
-                return;
-            } 
+            if (_isInitialized) return;
             
             _isInitialized = true;
             _initializationCancellationTokenSource = new CancellationTokenSource();
@@ -51,19 +47,16 @@ namespace BobbysMusicPlayer.Utils
                 await CacheFilesWithLimitedConcurrency(uniqueFiles, _initializationCancellationTokenSource.Token);
                 
                 BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Audio cache initialized with {_audioClipCache.Count} clips");
-                callback?.Invoke(true);
             }
             catch (OperationCanceledException)
             {
                 BobbysMusicPlayerPlugin.LogSource.LogInfo("[AUDIO CACHE] Initialization was cancelled");
                 _isInitialized = false;
-                callback?.Invoke(false);
             }
             catch (Exception e)
             {
                 BobbysMusicPlayerPlugin.LogSource.LogError($"[AUDIO CACHE] Failed to initialize cache: {e}");
                 _isInitialized = false; // Reset flag on error
-                callback?.Invoke(false);
             }
             finally
             {
@@ -77,7 +70,7 @@ namespace BobbysMusicPlayer.Utils
         /// </summary>
         private async Task CacheFilesWithLimitedConcurrency(List<string> filePaths, CancellationToken cancellationToken)
         {
-            const int maxConcurrentTasks = 1;
+            const int maxConcurrentTasks = 3;
             var semaphore = new SemaphoreSlim(maxConcurrentTasks);
             var tasks = new List<Task>();
             var completedCount = 0;
@@ -172,16 +165,15 @@ namespace BobbysMusicPlayer.Utils
             
             try
             {
-                BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Start Caching... {Path.GetFileName(filePath)}");
                 // Add timeout to prevent hanging on individual files
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // 30 second timeout
                 
                 var audioClip = await AsyncRequestAudioClip(filePath, cts.Token);
 
-                if (audioClip != null || audioClip.length <= 0)
+                if (audioClip != null)
                 {
                     _audioClipCache[filePath] = new AudioClipData(audioClip);
-                    BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Cached: {Path.GetFileName(filePath)}");
+                    BobbysMusicPlayerPlugin.LogSource.LogInfo($"[AUDIO CACHE] Cached: {Path.GetFileName(filePath)}. Length: {audioClip.length}");
                 }
             }
             catch (OperationCanceledException)
@@ -312,7 +304,7 @@ namespace BobbysMusicPlayer.Utils
         {
             BobbysMusicPlayerPlugin.LogSource.LogInfo("[AUDIO CACHE] Force reload requested - clearing cache and reinitializing");
             ClearCache();
-            await InitializeAsync(null);
+            await InitializeAsync();
         }
         
         /// <summary>
@@ -350,7 +342,12 @@ namespace BobbysMusicPlayer.Utils
                     return null;
                 }
                 
-                return DownloadHandlerAudioClip.GetContent(uwr);
+                var original = DownloadHandlerAudioClip.GetContent(uwr);
+                
+                var bytes = AudioClipToBytes(original);
+                var stableClip = BytesToAudioClip(bytes, original.name, original.channels, original.frequency);
+                
+                return stableClip;
             }
         }
         
