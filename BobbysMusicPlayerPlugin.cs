@@ -24,6 +24,7 @@ namespace BobbysMusicPlayer
         internal static ManualLogSource LogSource;
         
         public static bool InRaid { get; set; }
+        public bool Initialized { get; private set; } = false;
         
         private void Awake()
         {
@@ -48,10 +49,21 @@ namespace BobbysMusicPlayer
                 {
                     try
                     {
-                        await _cache.InitializeAsync();
-                        MenuMusicPatch.LoadAudioClips();
-                        UISoundsPatch.LoadUIClips();
-                        LogSource.LogInfo("[AUDIO CACHE] Background initialization completed");
+                        await _cache.InitializeAsync(result => {
+                            if (result)
+                            {
+                                MenuMusicPatch.LoadAudioClips();
+                                UISoundsPatch.LoadUIClips();
+                                LogSource.LogInfo("[AUDIO CACHE] Background initialization COMPLETED");
+                                Initialized = true;
+                            }
+                            else
+                            {
+                                Initialized = false;
+                                LogSource.LogInfo("[AUDIO CACHE] Background initialization FAILED");
+                            }
+                        });
+                        
                     }
                     catch (Exception e)
                     {
@@ -89,6 +101,8 @@ namespace BobbysMusicPlayer
 
         private void Update()
         {
+            if(!Initialized) return;
+            
 #if DEBUG
             // Debug keybind for testing spawn music
             if (_settings.KeyBind.Value.IsDown())
